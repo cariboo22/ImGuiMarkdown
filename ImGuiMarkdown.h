@@ -25,12 +25,12 @@ public:
 
 private:
 
-    static int EnterBlock(MD_BLOCKTYPE type, void* d, void* u) { return Block(type, d, true); }
-    static int LeaveBlock(MD_BLOCKTYPE type, void* d, void* u) { return Block(type, d, false); }
+    static int EnterBlock(MD_BLOCKTYPE type, void* d, void*) { return Block(type, d, true); }
+    static int LeaveBlock(MD_BLOCKTYPE type, void* d, void*) { return Block(type, d, false); }
     static int Block(MD_BLOCKTYPE type, void* detail, bool enter);
 
-    static int EnterSpan(MD_SPANTYPE type, void* d, void* u) { return Span(type, d, true); }
-    static int LeaveSpan(MD_SPANTYPE type, void* d, void* u) { return Span(type, d, false); }
+    static int EnterSpan(MD_SPANTYPE type, void* d, void*) { return Span(type, d, true); }
+    static int LeaveSpan(MD_SPANTYPE type, void* d, void*) { return Span(type, d, false); }
     static int Span(MD_SPANTYPE type, void* detail, bool enter);
 
     static int Text(MD_TEXTTYPE t, const MD_CHAR* text, MD_SIZE size, void* u);

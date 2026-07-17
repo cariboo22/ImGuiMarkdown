@@ -2,11 +2,21 @@
 
 #include <imgui.h>
 #include <md4c.h>
+#include <string>
 
 #include "ImGuiMarkdown.h"
 
 namespace MD4CCallbacks
 {
+    struct TableState
+    {
+        bool header = false;
+        int tableCounter = 0;
+        std::string tableName = "";
+    };
+
+    static TableState m_imgui_table {};
+
     inline void BLOCK_HR(bool enter)
     {
         if (!enter)
@@ -36,5 +46,57 @@ namespace MD4CCallbacks
             }
         }
     }
-}
+    inline void BLOCK_TABLE(const MD_BLOCK_TABLE_DETAIL* d, bool e)
+    {
+        if (e)
+        {
+            m_imgui_table.tableName = "##markdown_table_" + std::to_string(m_imgui_table.tableCounter++);
 
+            ImGui::BeginTable(
+                m_imgui_table.tableName.c_str(),
+                static_cast<int>(d->col_count),
+                ImGuiTableFlags_Borders |
+                ImGuiTableFlags_RowBg |
+                ImGuiTableFlags_Resizable |
+                ImGuiTableFlags_SizingStretchProp
+            );
+        }
+        else
+        {
+            ImGui::EndTable();
+            ImGui::NewLine();
+        }
+    }
+
+    inline void BLOCK_THEAD(bool e)
+    {
+        if (e)
+        {
+            m_imgui_table.header = true;
+        }
+        else
+        {
+            m_imgui_table.header = false;
+        }
+    }
+
+    inline void BLOCK_TR(bool e)
+    {
+        if (e && !m_imgui_table.header)
+        {
+            ImGui::TableNextRow();
+        }
+        else if (!e && m_imgui_table.header)
+        {
+            ImGui::TableHeadersRow();
+        }
+    }
+
+    inline void BLOCK_TD(const MD_BLOCK_TD_DETAIL*, bool e)
+    {
+        if (e)
+        {
+            ImGui::TableNextColumn();
+        }
+    }
+}
