@@ -13,6 +13,13 @@
 #include <string>
 #endif
 
+
+struct MarkdownConfig
+{
+    float indentSize = 20.0f;
+    float quoteRectThickness = 4.0f;
+};
+
 class ImGuiMarkdown
 {
 public:
@@ -22,6 +29,8 @@ public:
     void Parse(const char* text, const size_t size);
     void SetFonts(ImFont* H1, ImFont* H2, ImFont* H3) { m_H[0] = H1; m_H[1] = H2; m_H[2]= H3; }
     static ImFont* GetFont(unsigned header);
+
+    static inline MarkdownConfig config {};
 
 private:
 
@@ -60,6 +69,35 @@ private:
     "MD_BLOCK_FOOTNOTE_DEF_SECTION",
     "MD_BLOCK_FOOTNOTE_DEF",
     "MD_BLOCK_ADMONITION"
+    };
+
+    static inline std::vector<std::string> span_debug = {
+    "MD_SPAN_EM",
+    "MD_SPAN_STRONG",
+    "MD_SPAN_A",
+    "MD_SPAN_IMG",
+    "MD_SPAN_CODE",
+    "MD_SPAN_DEL",
+    "MD_SPAN_LATEXMATH",
+    "MD_SPAN_LATEXMATH_DISPLAY",
+    "MD_SPAN_WIKILINK",
+    "MD_SPAN_U",
+    "MD_SPAN_SPOILER",
+    "MD_SPAN_SUPERSCRIPT",
+    "MD_SPAN_SUBSCRIPT",
+    "MD_SPAN_FOOTNOTE_REF",
+    "MD_SPAN_MARK"
+    };
+
+    static inline std::vector<std::string> text_debug = {
+    "MD_TEXT_NORMAL",
+    "MD_TEXT_NULLCHAR",
+    "MD_TEXT_BR",
+    "MD_TEXT_SOFTBR",
+    "MD_TEXT_ENTITY",
+    "MD_TEXT_CODE",
+    "MD_TEXT_HTML",
+    "MD_TEXT_LATEXMATH"
     };
 #endif
 };

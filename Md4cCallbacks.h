@@ -15,7 +15,25 @@ namespace MD4CCallbacks
         std::string tableName = "";
     };
 
-    static TableState m_imgui_table {};
+    static TableState s_tableState {};
+    static int s_quoteDepth = 0;
+    static bool s_softBR = false;
+
+    /* === Block definitions === */
+    
+    inline void BLOCK_QUOTE(bool enter)
+    {
+        if (enter)
+        {
+            s_quoteDepth++;
+            ImGui::Indent(ImGuiMarkdown::config.indentSize);
+        }
+        else
+        {
+            ImGui::Unindent(ImGuiMarkdown::config.indentSize);
+            s_quoteDepth--;
+        }
+    }
 
     inline void BLOCK_HR(bool enter)
     {
@@ -46,15 +64,15 @@ namespace MD4CCallbacks
             }
         }
     }
-    inline void BLOCK_TABLE(const MD_BLOCK_TABLE_DETAIL* d, bool e)
+    inline void BLOCK_TABLE(const MD_BLOCK_TABLE_DETAIL* detail, bool enter)
     {
-        if (e)
+        if (enter)
         {
-            m_imgui_table.tableName = "##markdown_table_" + std::to_string(m_imgui_table.tableCounter++);
+            s_tableState.tableName = "##markdown_table_" + std::to_string(s_tableState.tableCounter++);
 
             ImGui::BeginTable(
-                m_imgui_table.tableName.c_str(),
-                static_cast<int>(d->col_count),
+                s_tableState.tableName.c_str(),
+                static_cast<int>(detail->col_count),
                 ImGuiTableFlags_Borders |
                 ImGuiTableFlags_RowBg |
                 ImGuiTableFlags_Resizable |
@@ -68,33 +86,33 @@ namespace MD4CCallbacks
         }
     }
 
-    inline void BLOCK_THEAD(bool e)
+    inline void BLOCK_THEAD(bool enter)
     {
-        if (e)
+        if (enter)
         {
-            m_imgui_table.header = true;
+            s_tableState.header = true;
         }
         else
         {
-            m_imgui_table.header = false;
+            s_tableState.header = false;
         }
     }
 
-    inline void BLOCK_TR(bool e)
+    inline void BLOCK_TR(bool enter)
     {
-        if (e && !m_imgui_table.header)
+        if (enter && !s_tableState.header)
         {
             ImGui::TableNextRow();
         }
-        else if (!e && m_imgui_table.header)
+        else if (!enter && s_tableState.header)
         {
             ImGui::TableHeadersRow();
         }
     }
 
-    inline void BLOCK_TD(const MD_BLOCK_TD_DETAIL*, bool e)
+    inline void BLOCK_TD(const MD_BLOCK_TD_DETAIL*, bool enter)
     {
-        if (e)
+        if (enter)
         {
             ImGui::TableNextColumn();
         }
