@@ -18,6 +18,7 @@ struct MarkdownConfig
 {
     float indentSize = 20.0f;
     float quoteRectThickness = 4.0f;
+    float codeBlockCornerRadius = 5.0f;
 };
 
 class ImGuiMarkdown
@@ -30,7 +31,7 @@ public:
     void SetFonts(ImFont* H1, ImFont* H2, ImFont* H3) { m_H[0] = H1; m_H[1] = H2; m_H[2]= H3; }
     static ImFont* GetFont(unsigned header);
 
-    static inline MarkdownConfig config {};
+    static inline MarkdownConfig s_config {};
 
 private:
 

@@ -11,11 +11,17 @@ namespace MD4CCallbacks
     struct TableState
     {
         bool header = false;
-        int tableCounter = 0;
         std::string tableName = "";
     };
 
+    struct Counter
+    {
+        int table = 0;
+        int code = 0;
+    };
+
     static TableState s_tableState {};
+    static Counter s_counter {};
     static int s_quoteDepth = 0;
     static bool s_softBR = false;
 
@@ -26,11 +32,11 @@ namespace MD4CCallbacks
         if (enter)
         {
             s_quoteDepth++;
-            ImGui::Indent(ImGuiMarkdown::config.indentSize);
+            ImGui::Indent(ImGuiMarkdown::s_config.indentSize);
         }
         else
         {
-            ImGui::Unindent(ImGuiMarkdown::config.indentSize);
+            ImGui::Unindent(ImGuiMarkdown::s_config.indentSize);
             s_quoteDepth--;
         }
     }
@@ -64,11 +70,33 @@ namespace MD4CCallbacks
             }
         }
     }
+
+    inline void BLOCK_CODE(const MD_BLOCK_CODE_DETAIL*, bool enter)
+    {
+        if (enter)
+        {
+            ImVec4 bgColor = ImGui::GetStyle().Colors[ImGuiCol_TableHeaderBg];
+            ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, ImGuiMarkdown::s_config.codeBlockCornerRadius);
+            ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::ColorConvertFloat4ToU32(bgColor));
+
+            ImGui::BeginChild(("##code_" + std::to_string(s_counter.code++)).c_str(), ImVec2(0.0f, 0.0f), 
+                ImGuiChildFlags_Borders | 
+                ImGuiChildFlags_AutoResizeY
+                );
+        }
+        else
+        {
+            ImGui::PopStyleColor();
+            ImGui::PopStyleVar();
+            ImGui::EndChild();
+        }
+    }
+
     inline void BLOCK_TABLE(const MD_BLOCK_TABLE_DETAIL* detail, bool enter)
     {
         if (enter)
         {
-            s_tableState.tableName = "##markdown_table_" + std::to_string(s_tableState.tableCounter++);
+            s_tableState.tableName = "##table_" + std::to_string(s_counter.table++);
 
             ImGui::BeginTable(
                 s_tableState.tableName.c_str(),

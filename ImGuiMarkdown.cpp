@@ -31,6 +31,7 @@ ImGuiMarkdown::ImGuiMarkdown()
 void ImGuiMarkdown::Parse(const char* text, const size_t size)
 {
     MD4CCallbacks::s_tableState = {};
+    MD4CCallbacks::s_counter = {};
 
 #ifdef DEBUG
     std::cout << "================================================" << '\n';
@@ -61,7 +62,10 @@ int ImGuiMarkdown::Block(MD_BLOCKTYPE type, void* detail, bool enter)
             MD4CCallbacks::BLOCK_HR(enter);
             break;
         case MD_BLOCK_H:
-            MD4CCallbacks::BLOCK_H((MD_BLOCK_H_DETAIL*)detail, enter);
+            MD4CCallbacks::BLOCK_H((MD_BLOCK_H_DETAIL*) detail, enter);
+            break;
+        case MD_BLOCK_CODE:
+            MD4CCallbacks::BLOCK_CODE((MD_BLOCK_CODE_DETAIL*) detail, enter);
             break;
         case MD_BLOCK_TABLE:
             MD4CCallbacks::BLOCK_TABLE((MD_BLOCK_TABLE_DETAIL*) detail, enter);
@@ -122,9 +126,9 @@ void renderText(const char* text, const std::size_t size)
 
         // Draw small quite rect
         ImVec4 rectColor = ImGui::GetStyle().Colors[ImGuiCol_ScrollbarGrab];
-        ImVec2 startRectPos = ImVec2(p.x - (ImGuiMarkdown::config.indentSize/2.0f - ImGuiMarkdown::config.quoteRectThickness/2.0f),
+        ImVec2 startRectPos = ImVec2(p.x - (ImGuiMarkdown::s_config.indentSize/2.0f - ImGuiMarkdown::s_config.quoteRectThickness/2.0f),
                                      p.y - ImGui::GetStyle().ItemSpacing.y/2.0f);
-        ImVec2 endRectPos = ImVec2(p.x - (ImGuiMarkdown::config.indentSize/2.0f + ImGuiMarkdown::config.quoteRectThickness/2.0f),
+        ImVec2 endRectPos = ImVec2(p.x - (ImGuiMarkdown::s_config.indentSize/2.0f + ImGuiMarkdown::s_config.quoteRectThickness/2.0f),
                                    p.y + ImGui::GetTextLineHeight() + ImGui::GetStyle().ItemSpacing.y/2.0f);
 
         for (int d = 0; d < MD4CCallbacks::s_quoteDepth; d++)
@@ -135,8 +139,8 @@ void renderText(const char* text, const std::size_t size)
                 ImGui::ColorConvertFloat4ToU32(rectColor)
             );
 
-            startRectPos.x -= ImGuiMarkdown::config.indentSize;
-            endRectPos.x -= ImGuiMarkdown::config.indentSize;
+            startRectPos.x -= ImGuiMarkdown::s_config.indentSize;
+            endRectPos.x -= ImGuiMarkdown::s_config.indentSize;
         }
 
         // Background rect
@@ -169,6 +173,17 @@ void renderText(const char* text, const std::size_t size)
 #endif
 }
 
+void renderCode(const char* text, const std::size_t size)
+{
+    if (*text != '\n')
+        renderText(text, size);
+#ifdef DEBUG
+    else
+        // !! This bug has been seen only in code block (so text code) !!
+        std::cout << "The parser added a \\n for no reason" << '\n';
+#endif
+}
+
 int ImGuiMarkdown::Text(MD_TEXTTYPE type, const MD_CHAR* text, MD_SIZE size, void*)
 {
 #ifdef DEBUG
@@ -181,7 +196,7 @@ int ImGuiMarkdown::Text(MD_TEXTTYPE type, const MD_CHAR* text, MD_SIZE size, voi
             renderText(text, size);
             break;
         case MD_TEXT_CODE:
-            renderText(text, size);
+            renderCode(text, size);
             break;
         case MD_TEXT_SOFTBR:
             ImGui::SameLine();
