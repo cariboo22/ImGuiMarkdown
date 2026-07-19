@@ -31,6 +31,7 @@ namespace MD4CCallbacks
     static ParagraphState s_paragraphState {};
     static Counter s_counter {};
     static int s_quoteDepth = 0;
+    static std::string s_codeTextBuffer = "";
 
     /* === Block definitions === */
     
@@ -90,9 +91,15 @@ namespace MD4CCallbacks
                 ImGuiChildFlags_Borders | 
                 ImGuiChildFlags_AutoResizeY
                 );
+            s_codeTextBuffer = "";
         }
         else
         {
+            ImGui::PushTextWrapPos(0.0f);
+            ImGui::TextUnformatted(s_codeTextBuffer.c_str());
+            ImGui::PopTextWrapPos();
+            
+            s_codeTextBuffer = "";
             ImGui::PopStyleColor();
             ImGui::PopStyleVar();
             ImGui::EndChild();

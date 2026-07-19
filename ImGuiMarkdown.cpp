@@ -174,6 +174,7 @@ void renderText(const char* text, const std::size_t size)
         ImGui::TextUnformatted(s.c_str());
         ImGui::PopTextWrapPos();
     }
+
 #ifdef DEBUG
     std::cout << s << '\n';
 #endif
@@ -181,12 +182,11 @@ void renderText(const char* text, const std::size_t size)
 
 void renderCode(const char* text, const std::size_t size)
 {
-    if (*text != '\n')
-        renderText(text, size);
+    std::string s(text, size);
+    MD4CCallbacks::s_codeTextBuffer += s;
+
 #ifdef DEBUG
-    else
-        // !! This bug has been seen only in MD_BLOCK_CODE (so MD_TEXT_CODE) !!
-        std::cout << "The parser added a \\n for no reason" << '\n';
+    std::cout << s << '\n';
 #endif
 }
 
