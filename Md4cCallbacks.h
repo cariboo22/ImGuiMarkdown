@@ -14,6 +14,13 @@ namespace MD4CCallbacks
         std::string tableName = "";
     };
 
+    struct ParagraphState
+    {
+        bool isIn = false;
+        // ?? Is std::string good for string buffer ??
+        std::string buffer = "";
+    };
+
     struct Counter
     {
         int table = 0;
@@ -21,9 +28,9 @@ namespace MD4CCallbacks
     };
 
     static TableState s_tableState {};
+    static ParagraphState s_paragraphState {};
     static Counter s_counter {};
     static int s_quoteDepth = 0;
-    static bool s_softBR = false;
 
     /* === Block definitions === */
     
@@ -89,6 +96,23 @@ namespace MD4CCallbacks
             ImGui::PopStyleColor();
             ImGui::PopStyleVar();
             ImGui::EndChild();
+        }
+    }
+
+    inline void BLOCK_P(bool enter)
+    {
+        if (enter)
+        {
+            s_paragraphState.isIn = true;
+        }
+        else
+        {
+            ImGui::PushTextWrapPos(0.0f);
+            ImGui::TextUnformatted(s_paragraphState.buffer.c_str());
+            ImGui::PopTextWrapPos();
+            
+            s_paragraphState.buffer = "";
+            s_paragraphState.isIn = false;
         }
     }
 

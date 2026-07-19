@@ -67,6 +67,9 @@ int ImGuiMarkdown::Block(MD_BLOCKTYPE type, void* detail, bool enter)
         case MD_BLOCK_CODE:
             MD4CCallbacks::BLOCK_CODE((MD_BLOCK_CODE_DETAIL*) detail, enter);
             break;
+        case MD_BLOCK_P:
+            MD4CCallbacks::BLOCK_P(enter);
+            break;
         case MD_BLOCK_TABLE:
             MD4CCallbacks::BLOCK_TABLE((MD_BLOCK_TABLE_DETAIL*) detail, enter);
             break;
@@ -120,7 +123,7 @@ void renderText(const char* text, const std::size_t size)
     std::string s(text, size);
 
     // Rendering quote rectangle and background
-    if (MD4CCallbacks::s_quoteDepth > 0 && !MD4CCallbacks::s_softBR)
+    if (MD4CCallbacks::s_quoteDepth > 0)
     {
         ImVec2 p = ImGui::GetCursorScreenPos();
 
@@ -154,14 +157,17 @@ void renderText(const char* text, const std::size_t size)
         // );
     }
 
-    if (MD4CCallbacks::s_softBR)
-        MD4CCallbacks::s_softBR = false;
-
+    // Handle paragraphs and soft break
+    if (MD4CCallbacks::s_paragraphState.isIn)
+    {
+        MD4CCallbacks::s_paragraphState.buffer += s;
+    }
     // Handle table header text writing
-    if (MD4CCallbacks::s_tableState.header)
+    else if (MD4CCallbacks::s_tableState.header)
     {
         ImGui::TableSetupColumn(s.c_str());
     }
+    // Default case
     else
     {
         ImGui::PushTextWrapPos(0.0f);
@@ -179,7 +185,7 @@ void renderCode(const char* text, const std::size_t size)
         renderText(text, size);
 #ifdef DEBUG
     else
-        // !! This bug has been seen only in code block (so text code) !!
+        // !! This bug has been seen only in MD_BLOCK_CODE (so MD_TEXT_CODE) !!
         std::cout << "The parser added a \\n for no reason" << '\n';
 #endif
 }
@@ -199,8 +205,8 @@ int ImGuiMarkdown::Text(MD_TEXTTYPE type, const MD_CHAR* text, MD_SIZE size, voi
             renderCode(text, size);
             break;
         case MD_TEXT_SOFTBR:
-            ImGui::SameLine();
-            MD4CCallbacks::s_softBR = true;
+            if (MD4CCallbacks::s_paragraphState.isIn)
+                MD4CCallbacks::s_paragraphState.buffer += " ";
             break;
         default:
             break;
