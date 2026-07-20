@@ -6,7 +6,7 @@
 #include <cstddef>
 
 
-// #define DEBUG
+#define DEBUG
 
 #ifdef DEBUG
 #include <vector>

@@ -105,6 +105,15 @@ int ImGuiMarkdown::Block(MD_BLOCKTYPE type, void* detail, bool enter)
 
 int ImGuiMarkdown::Span(MD_SPANTYPE type, void* detail, bool enter)
 {
+    switch (type)
+    {
+        case MD_SPAN_CODE:
+            MD4CCallbacks::SPAN_CODE(enter);
+            break;
+        default:
+            break;
+    }
+
 #ifdef DEBUG
     if (enter)
     {
@@ -158,9 +167,9 @@ void renderText(const char* text, const std::size_t size)
     }
 
     // Handle paragraphs and soft break
-    if (MD4CCallbacks::s_paragraphState.isIn)
+    if (MD4CCallbacks::s_isInParagraph)
     {
-        MD4CCallbacks::s_paragraphState.buffer += s;
+        MD4CCallbacks::s_SpanStack[MD4CCallbacks::s_SpanStack.size()-1].buffer += s;
     }
     // Handle table header text writing
     else if (MD4CCallbacks::s_tableState.header)
@@ -183,7 +192,10 @@ void renderText(const char* text, const std::size_t size)
 void renderCode(const char* text, const std::size_t size)
 {
     std::string s(text, size);
-    MD4CCallbacks::s_codeTextBuffer += s;
+    if (MD4CCallbacks::s_isInParagraph)
+        MD4CCallbacks::s_SpanStack[MD4CCallbacks::s_SpanStack.size()-1].buffer += s;
+    else
+        MD4CCallbacks::s_codeTextBuffer += s;
 
 #ifdef DEBUG
     std::cout << s << '\n';
@@ -205,8 +217,8 @@ int ImGuiMarkdown::Text(MD_TEXTTYPE type, const MD_CHAR* text, MD_SIZE size, voi
             renderCode(text, size);
             break;
         case MD_TEXT_SOFTBR:
-            if (MD4CCallbacks::s_paragraphState.isIn)
-                MD4CCallbacks::s_paragraphState.buffer += " ";
+            if (MD4CCallbacks::s_isInParagraph)
+                MD4CCallbacks::s_SpanStack[MD4CCallbacks::s_SpanStack.size()-1].buffer += " ";
             break;
         default:
             break;

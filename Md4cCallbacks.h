@@ -1,8 +1,10 @@
 #pragma once
 
 #include <imgui.h>
+#include <iostream>
 #include <md4c.h>
 #include <string>
+#include <vector>
 
 #include "ImGuiMarkdown.h"
 
@@ -14,13 +16,6 @@ namespace MD4CCallbacks
         std::string tableName = "";
     };
 
-    struct ParagraphState
-    {
-        bool isIn = false;
-        // ?? Is std::string good for string buffer ??
-        std::string buffer = "";
-    };
-
     struct Counter
     {
         int table = 0;
@@ -28,10 +23,114 @@ namespace MD4CCallbacks
     };
 
     static TableState s_tableState {};
-    static ParagraphState s_paragraphState {};
+    static bool s_isInParagraph = false;
+    static MD_SPANTYPE s_curSpanType;
+
     static Counter s_counter {};
     static int s_quoteDepth = 0;
     static std::string s_codeTextBuffer = "";
+
+    struct Span
+    {
+        ImU32 color = ImGui::ColorConvertFloat4ToU32(ImGui::GetStyle().Colors[ImGuiCol_Text]);
+        ImFont* font = ImGui::GetFont();
+        float fontSize = ImGui::GetFontSize();
+        // ?? Is std::string good for string buffer ??
+        std::string buffer = "";
+    };
+    static std::vector<Span> s_SpanStack {};
+
+    inline void RenderRichText(const std::vector<Span>& spanStack)
+    {
+        ImVec2 pos = ImGui::GetCursorScreenPos();
+        float wrapWidth = ImGui::GetContentRegionAvail().x;
+
+        const float startX = pos.x;
+        const float startY = pos.y;
+
+        float x = pos.x;
+        float y = pos.y;
+
+        float maxHeight = 0.0f;
+        ImDrawList* imDrawList = ImGui::GetWindowDrawList();
+        std::size_t i = 0;
+        for (const auto& span : spanStack)
+        {
+            ImFont* font = span.font ? span.font : ImGui::GetFont();
+            float fontSize = span.fontSize > 0 ? span.fontSize : ImGui::GetFontSize();
+
+            float lineHeight = fontSize;
+            maxHeight = std::max(maxHeight, lineHeight);
+
+            std::string current;
+
+            auto flushWord = [&]()
+            {
+                if (current.empty())
+                    return;
+
+                ImVec2 size = font->CalcTextSizeA(
+                    fontSize,
+                    FLT_MAX,
+                    0.0f,
+                    current.c_str());
+
+                if (x > startX &&
+                    x + size.x > startX + wrapWidth)
+                {
+                    x = startX;
+                    y += lineHeight;
+                }
+
+                imDrawList->AddText(
+                    font,
+                    fontSize,
+                    ImVec2(x, y),
+                    span.color,
+                    current.c_str());
+
+                x += size.x;
+                current.clear();
+            };
+            auto addSpace = [&]()
+            {
+                ImVec2 size = font->CalcTextSizeA(
+                    fontSize,
+                    FLT_MAX,
+                    0.0f,
+                    " ");
+
+                if (x > startX &&
+                    x + size.x > startX + wrapWidth)
+                {
+                    x = startX;
+                    y += lineHeight;
+                }
+                else
+                {
+                    x += size.x;
+                }
+            };
+
+            for (const auto& c : span.buffer)
+            {
+                if (c == ' ')
+                {
+                    flushWord();
+
+                    addSpace();
+
+                    continue;
+                }
+
+                current += c;
+            }
+
+            flushWord();
+        }
+
+        ImGui::Dummy(ImVec2(0.0f, y + maxHeight - startY));
+    }
 
     /* === Block definitions === */
     
@@ -110,16 +209,16 @@ namespace MD4CCallbacks
     {
         if (enter)
         {
-            s_paragraphState.isIn = true;
+            s_isInParagraph = true;
+            s_SpanStack.clear();
+            s_SpanStack.push_back({});
         }
         else
         {
-            ImGui::PushTextWrapPos(0.0f);
-            ImGui::TextUnformatted(s_paragraphState.buffer.c_str());
-            ImGui::PopTextWrapPos();
+            RenderRichText(s_SpanStack);
             
-            s_paragraphState.buffer = "";
-            s_paragraphState.isIn = false;
+            s_SpanStack.clear();
+            s_isInParagraph = false;
         }
     }
 
@@ -174,6 +273,21 @@ namespace MD4CCallbacks
         if (enter)
         {
             ImGui::TableNextColumn();
+        }
+    }
+
+    /* === Span definitions === */
+
+    inline void SPAN_CODE(bool enter)
+    {
+        if (enter)
+        {
+            s_SpanStack.push_back({.color = IM_COL32(255, 0, 0, 255)});
+        }
+        else
+        {
+            s_SpanStack.push_back({});
+            s_codeTextBuffer = "";
         }
     }
 }
