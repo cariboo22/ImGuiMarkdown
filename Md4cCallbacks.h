@@ -1,8 +1,8 @@
 #pragma once
 
 #include <imgui.h>
-#include <iostream>
 #include <md4c.h>
+
 #include <string>
 #include <vector>
 
@@ -23,8 +23,7 @@ namespace MD4CCallbacks
     };
 
     static TableState s_tableState {};
-    static bool s_isInParagraph = false;
-    static MD_SPANTYPE s_curSpanType;
+    static bool s_isInCodeBlock = false;
 
     static Counter s_counter {};
     static int s_quoteDepth = 0;
@@ -40,7 +39,7 @@ namespace MD4CCallbacks
     };
     static std::vector<Span> s_SpanStack {};
 
-    inline void RenderRichText(const std::vector<Span>& spanStack)
+    inline void RenderRichText()
     {
         ImVec2 pos = ImGui::GetCursorScreenPos();
         float wrapWidth = ImGui::GetContentRegionAvail().x;
@@ -53,8 +52,8 @@ namespace MD4CCallbacks
 
         float maxHeight = 0.0f;
         ImDrawList* imDrawList = ImGui::GetWindowDrawList();
-        std::size_t i = 0;
-        for (const auto& span : spanStack)
+
+        for (const auto& span : s_SpanStack)
         {
             ImFont* font = span.font ? span.font : ImGui::GetFont();
             float fontSize = span.fontSize > 0 ? span.fontSize : ImGui::GetFontSize();
@@ -134,6 +133,20 @@ namespace MD4CCallbacks
 
     /* === Block definitions === */
     
+    inline void BLOCK_DEFAULT(bool enter)
+    {
+        if (enter)
+        {
+            MD4CCallbacks::s_SpanStack.clear();
+            MD4CCallbacks::s_SpanStack.push_back({});
+        }
+        else
+        {
+            MD4CCallbacks::RenderRichText();
+            MD4CCallbacks::s_SpanStack.clear();
+        }
+    }
+
     inline void BLOCK_QUOTE(bool enter)
     {
         if (enter)
@@ -162,14 +175,20 @@ namespace MD4CCallbacks
         if (enter)
         {
             ImGui::NewLine();
+            s_SpanStack.clear();
+
             if (detail->level <= 3)
                 ImGui::PushFont(ImGuiMarkdown::GetFont(detail->level-1));
+            s_SpanStack.push_back({});
         }
         else
         {
+            RenderRichText();
+            s_SpanStack.clear();
+
             if (detail->level <= 3)
                 ImGui::PopFont();
-
+            
             if (detail->level <= 2)
             {
                 ImGui::Separator();
@@ -182,6 +201,8 @@ namespace MD4CCallbacks
     {
         if (enter)
         {
+            s_isInCodeBlock = true;
+
             ImVec4 bgColor = ImGui::GetStyle().Colors[ImGuiCol_TableHeaderBg];
             ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, ImGuiMarkdown::s_config.codeBlockCornerRadius);
             ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::ColorConvertFloat4ToU32(bgColor));
@@ -202,6 +223,8 @@ namespace MD4CCallbacks
             ImGui::PopStyleColor();
             ImGui::PopStyleVar();
             ImGui::EndChild();
+
+            s_isInCodeBlock = false;
         }
     }
 
@@ -209,16 +232,13 @@ namespace MD4CCallbacks
     {
         if (enter)
         {
-            s_isInParagraph = true;
             s_SpanStack.clear();
             s_SpanStack.push_back({});
         }
         else
         {
-            RenderRichText(s_SpanStack);
-            
+            RenderRichText();
             s_SpanStack.clear();
-            s_isInParagraph = false;
         }
     }
 
@@ -273,6 +293,13 @@ namespace MD4CCallbacks
         if (enter)
         {
             ImGui::TableNextColumn();
+            s_SpanStack.clear();
+            s_SpanStack.push_back({});
+        }
+        else
+        {
+            RenderRichText();
+            s_SpanStack.clear();
         }
     }
 

@@ -87,6 +87,7 @@ int ImGuiMarkdown::Block(MD_BLOCKTYPE type, void* detail, bool enter)
             MD4CCallbacks::BLOCK_TD((MD_BLOCK_TD_DETAIL*) detail, enter);
             break;
         default:
+            MD4CCallbacks::BLOCK_DEFAULT(enter);
             break;
     }
 #ifdef DEBUG
@@ -166,22 +167,16 @@ void renderText(const char* text, const std::size_t size)
         // );
     }
 
-    // Handle paragraphs and soft break
-    if (MD4CCallbacks::s_isInParagraph)
-    {
-        MD4CCallbacks::s_SpanStack[MD4CCallbacks::s_SpanStack.size()-1].buffer += s;
-    }
     // Handle table header text writing
-    else if (MD4CCallbacks::s_tableState.header)
+    // ?? Does the table header should also be rich text ??
+    if (MD4CCallbacks::s_tableState.header)
     {
         ImGui::TableSetupColumn(s.c_str());
     }
     // Default case
     else
     {
-        ImGui::PushTextWrapPos(0.0f);
-        ImGui::TextUnformatted(s.c_str());
-        ImGui::PopTextWrapPos();
+        MD4CCallbacks::s_SpanStack[MD4CCallbacks::s_SpanStack.size()-1].buffer += s;
     }
 
 #ifdef DEBUG
@@ -192,10 +187,10 @@ void renderText(const char* text, const std::size_t size)
 void renderCode(const char* text, const std::size_t size)
 {
     std::string s(text, size);
-    if (MD4CCallbacks::s_isInParagraph)
-        MD4CCallbacks::s_SpanStack[MD4CCallbacks::s_SpanStack.size()-1].buffer += s;
-    else
+    if (MD4CCallbacks::s_isInCodeBlock)
         MD4CCallbacks::s_codeTextBuffer += s;
+    else
+        MD4CCallbacks::s_SpanStack[MD4CCallbacks::s_SpanStack.size()-1].buffer += s;
 
 #ifdef DEBUG
     std::cout << s << '\n';
@@ -217,8 +212,7 @@ int ImGuiMarkdown::Text(MD_TEXTTYPE type, const MD_CHAR* text, MD_SIZE size, voi
             renderCode(text, size);
             break;
         case MD_TEXT_SOFTBR:
-            if (MD4CCallbacks::s_isInParagraph)
-                MD4CCallbacks::s_SpanStack[MD4CCallbacks::s_SpanStack.size()-1].buffer += " ";
+            MD4CCallbacks::s_SpanStack[MD4CCallbacks::s_SpanStack.size()-1].buffer += " ";
             break;
         default:
             break;
