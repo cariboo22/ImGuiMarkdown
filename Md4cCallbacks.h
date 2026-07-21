@@ -29,6 +29,9 @@ namespace MD4CCallbacks
     static int s_quoteDepth = 0;
     static std::string s_codeTextBuffer = "";
 
+    static bool s_italic = false;
+    static bool s_bold = false;
+
     struct Span
     {
         ImU32 color = ImGui::ColorConvertFloat4ToU32(ImGui::GetStyle().Colors[ImGuiCol_Text]);
@@ -177,8 +180,7 @@ namespace MD4CCallbacks
             ImGui::NewLine();
             s_SpanStack.clear();
 
-            if (detail->level <= 3)
-                ImGui::PushFont(ImGuiMarkdown::GetFont(detail->level-1));
+            ImGui::PushFont(ImGuiMarkdown::GetFont(ImGuiMarkdown::FONT_H1 + detail->level-1));
             s_SpanStack.push_back({});
         }
         else
@@ -186,8 +188,7 @@ namespace MD4CCallbacks
             RenderRichText();
             s_SpanStack.clear();
 
-            if (detail->level <= 3)
-                ImGui::PopFont();
+            ImGui::PopFont();
             
             if (detail->level <= 2)
             {
@@ -305,16 +306,51 @@ namespace MD4CCallbacks
 
     /* === Span definitions === */
 
+    inline void SPAN_EM(bool enter)
+    {
+        if (enter)
+        {
+            s_italic = true;
+            if (s_italic && s_bold)
+                ImGui::PushFont(ImGuiMarkdown::GetFont(ImGuiMarkdown::FONT_BOLDITALIC));
+            else
+                ImGui::PushFont(ImGuiMarkdown::GetFont(ImGuiMarkdown::FONT_ITALIC));
+        }
+        else
+        {
+            s_italic = false;
+            ImGui::PopFont();
+        }
+    }
+
+    inline void SPAN_STRONG(bool enter)
+    {
+        if (enter)
+        {
+            s_bold = true;
+            if (s_italic && s_bold)
+                ImGui::PushFont(ImGuiMarkdown::GetFont(ImGuiMarkdown::FONT_BOLDITALIC));
+            else
+                ImGui::PushFont(ImGuiMarkdown::GetFont(ImGuiMarkdown::FONT_BOLD));
+        }
+        else
+        {
+            s_bold = false;
+            ImGui::PopFont();
+        }
+    }
+
     inline void SPAN_CODE(bool enter)
     {
         if (enter)
         {
-            s_SpanStack.push_back({.color = IM_COL32(255, 0, 0, 255)});
+            ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 0, 0, 255));
         }
         else
         {
-            s_SpanStack.push_back({});
+            ImGui::PopStyleColor();
             s_codeTextBuffer = "";
         }
     }
 }
+

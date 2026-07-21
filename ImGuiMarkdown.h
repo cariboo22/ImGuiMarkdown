@@ -6,13 +6,12 @@
 #include <cstddef>
 
 
-#define DEBUG
+// #define DEBUG
 
 #ifdef DEBUG
 #include <vector>
 #include <string>
 #endif
-
 
 struct MarkdownConfig
 {
@@ -21,14 +20,35 @@ struct MarkdownConfig
     float codeBlockCornerRadius = 5.0f;
 };
 
+
 class ImGuiMarkdown
 {
 public:
+    typedef enum Fonts {
+        FONT_REGULAR = 0,
+        FONT_ITALIC,
+        FONT_BOLD,
+        FONT_BOLDITALIC,
+        FONT_H1,
+        FONT_H2,
+        FONT_H3,
+        FONT_H4,
+        FONT_H5,
+        FONT_H6
+    } Fonts;
+
     ImGuiMarkdown();
     ~ImGuiMarkdown() = default;
 
     void Parse(const char* text, const size_t size);
-    void SetFonts(ImFont* H1, ImFont* H2, ImFont* H3) { m_H[0] = H1; m_H[1] = H2; m_H[2]= H3; }
+    void SetFonts(ImFont* regular, ImFont* italic, ImFont* bold, ImFont* boldItalic, 
+                  ImFont* H1, ImFont* H2, ImFont* H3,
+                  ImFont* H4 = nullptr, ImFont* H5 = nullptr, ImFont* H6 = nullptr) 
+                  { s_Fonts[FONT_REGULAR] = regular; s_Fonts[FONT_ITALIC] = italic; 
+                    s_Fonts[FONT_BOLD] = bold; s_Fonts[FONT_BOLDITALIC] = boldItalic;
+                    s_Fonts[FONT_H1] = H1; s_Fonts[FONT_H2] = H2; s_Fonts[FONT_H3]= H3; 
+                    s_Fonts[FONT_H4] = H4; s_Fonts[FONT_H5] = H5; s_Fonts[FONT_H6]= H6; }
+
     static ImFont* GetFont(unsigned header);
 
     static inline MarkdownConfig s_config {};
@@ -47,7 +67,7 @@ private:
 
     MD_PARSER m_Parser {};
 
-    static inline ImFont* m_H[3];
+    static inline ImFont* s_Fonts[10];
 
 #ifdef DEBUG
     static inline std::vector<std::string> block_debug = {

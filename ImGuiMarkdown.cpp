@@ -43,12 +43,16 @@ void ImGuiMarkdown::Parse(const char* text, const size_t size)
 }
 
 
-ImFont* ImGuiMarkdown::GetFont(unsigned header)
+ImFont* ImGuiMarkdown::GetFont(unsigned int id)
 {
-    if (header < 3)
-        return m_H[header];
+    if (id < std::size(s_Fonts) && s_Fonts[id] != nullptr)
+    {
+        return s_Fonts[id];
+    }
     else
-        return nullptr;
+    {
+        return ImGui::GetFont();
+    }
 }
 
 int ImGuiMarkdown::Block(MD_BLOCKTYPE type, void* detail, bool enter)
@@ -108,12 +112,20 @@ int ImGuiMarkdown::Span(MD_SPANTYPE type, void* detail, bool enter)
 {
     switch (type)
     {
+        case MD_SPAN_EM:
+            MD4CCallbacks::SPAN_EM(enter);
+            break;
+        case MD_SPAN_STRONG:
+            MD4CCallbacks::SPAN_STRONG(enter);
+            break;
         case MD_SPAN_CODE:
             MD4CCallbacks::SPAN_CODE(enter);
             break;
         default:
             break;
     }
+
+    MD4CCallbacks::s_SpanStack.push_back({});
 
 #ifdef DEBUG
     if (enter)
