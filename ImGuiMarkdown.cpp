@@ -62,6 +62,12 @@ int ImGuiMarkdown::Block(MD_BLOCKTYPE type, void* detail, bool enter)
         case MD_BLOCK_QUOTE:
             MD4CCallbacks::BLOCK_QUOTE(enter);
             break;
+        case MD_BLOCK_UL:
+            MD4CCallbacks::BLOCK_UL(enter);
+            break;
+        case MD_BLOCK_LI:
+            MD4CCallbacks::BLOCK_LI((MD_BLOCK_LI_DETAIL*) detail, enter);
+            break;
         case MD_BLOCK_HR:
             MD4CCallbacks::BLOCK_HR(enter);
             break;

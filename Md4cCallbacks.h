@@ -27,6 +27,7 @@ namespace MD4CCallbacks
 
     static Counter s_counter {};
     static int s_quoteDepth = 0;
+    static int s_listDepth = 0;
     static std::string s_codeTextBuffer = "";
 
     static bool s_italic = false;
@@ -58,6 +59,9 @@ namespace MD4CCallbacks
 
         for (const auto& span : s_SpanStack)
         {
+            if (span.buffer == "")
+                continue;
+
             ImFont* font = span.font ? span.font : ImGui::GetFont();
             float fontSize = span.fontSize > 0 ? span.fontSize : ImGui::GetFontSize();
 
@@ -161,6 +165,43 @@ namespace MD4CCallbacks
         {
             ImGui::Unindent(ImGuiMarkdown::s_config.indentSize);
             s_quoteDepth--;
+        }
+    }
+
+    inline void BLOCK_UL(bool enter)
+    {
+        if (enter)
+        {
+            // Renders the text that was potentialy in a previous BLOCK_LI
+            // In the case of a multiple stage list
+            RenderRichText();
+            s_SpanStack.clear();
+
+            if (s_listDepth > 0)
+                ImGui::Indent(ImGuiMarkdown::s_config.indentSize);
+            s_listDepth++;
+        }
+        else
+        {
+            if (s_listDepth > 1)
+                ImGui::Unindent(ImGuiMarkdown::s_config.indentSize);
+            s_listDepth--;
+            s_SpanStack.clear();
+        }
+    }
+
+    inline void BLOCK_LI(MD_BLOCK_LI_DETAIL*, bool enter)
+    {
+        if (enter)
+        {
+            ImGui::Bullet();
+            s_SpanStack.clear();
+            s_SpanStack.push_back({});
+        }
+        else
+        {
+            RenderRichText();
+            s_SpanStack.clear();
         }
     }
 
