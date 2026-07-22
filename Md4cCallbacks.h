@@ -22,13 +22,23 @@ namespace MD4CCallbacks
         int code = 0;
     };
 
+    struct List
+    {
+        bool isUnordered = false;
+        unsigned int start = 0;
+        unsigned int counter = 0;
+        char mark;
+    };
+
     static TableState s_tableState {};
     static bool s_isInCodeBlock = false;
 
     static Counter s_counter {};
     static int s_quoteDepth = 0;
-    static int s_listDepth = 0;
     static std::string s_codeTextBuffer = "";
+
+    static int s_listDepth = 0;
+    static std::vector<List> s_listStack {};
 
     static bool s_italic = false;
     static bool s_bold = false;
@@ -168,7 +178,7 @@ namespace MD4CCallbacks
         }
     }
 
-    inline void BLOCK_UL(bool enter)
+    inline void BLOCK_UL(MD_BLOCK_UL_DETAIL* detail, bool enter)
     {
         if (enter)
         {
@@ -179,13 +189,47 @@ namespace MD4CCallbacks
 
             if (s_listDepth > 0)
                 ImGui::Indent(ImGuiMarkdown::s_config.indentSize);
+
             s_listDepth++;
+            s_listStack.push_back({.isUnordered = true, .mark = detail->mark});
         }
         else
         {
             if (s_listDepth > 1)
                 ImGui::Unindent(ImGuiMarkdown::s_config.indentSize);
+
             s_listDepth--;
+            s_listStack.pop_back();
+
+            s_SpanStack.clear();
+        }
+    }
+
+    inline void BLOCK_OL(MD_BLOCK_OL_DETAIL* detail, bool enter)
+    {
+        if (enter)
+        {
+            // Renders the text that was potentialy in a previous BLOCK_LI
+            // In the case of a multiple stage list
+            RenderRichText();
+            s_SpanStack.clear();
+
+            if (s_listDepth > 0)
+                ImGui::Indent(ImGuiMarkdown::s_config.indentSize);
+            
+            s_listDepth++;
+            s_listStack.push_back({.isUnordered = false,
+                                   .start = detail->start,
+                                   .mark = detail->mark_delimiter});
+        }
+        else
+        {
+            if (s_listDepth > 1)
+                ImGui::Unindent(ImGuiMarkdown::s_config.indentSize);
+
+            s_listDepth--;
+            s_listStack.pop_back();
+
             s_SpanStack.clear();
         }
     }
@@ -194,9 +238,23 @@ namespace MD4CCallbacks
     {
         if (enter)
         {
-            ImGui::Bullet();
-            s_SpanStack.clear();
-            s_SpanStack.push_back({});
+            auto& listBack = s_listStack.back();
+
+            if (listBack.isUnordered)
+            {
+                ImGui::Bullet();
+
+                s_SpanStack.clear();
+                s_SpanStack.push_back({});
+            }
+            else
+            {
+                s_SpanStack.clear();
+                s_SpanStack.push_back({});
+
+                s_SpanStack.back().buffer = std::to_string(listBack.start + listBack.counter++) + listBack.mark + " ";
+            }
+
         }
         else
         {
@@ -274,7 +332,6 @@ namespace MD4CCallbacks
     {
         if (enter)
         {
-            s_SpanStack.clear();
             s_SpanStack.push_back({});
         }
         else

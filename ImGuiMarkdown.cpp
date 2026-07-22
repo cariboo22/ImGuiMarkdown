@@ -14,7 +14,7 @@
 ImGuiMarkdown::ImGuiMarkdown()
 {
     m_Parser.abi_version = 0;
-    m_Parser.flags = MD_FLAG_TABLES;
+    m_Parser.flags = MD_FLAG_TABLES | MD_FLAG_NOINDENTEDCODEBLOCKS;
 
     m_Parser.enter_block = EnterBlock;
     m_Parser.leave_block = LeaveBlock;
@@ -63,7 +63,10 @@ int ImGuiMarkdown::Block(MD_BLOCKTYPE type, void* detail, bool enter)
             MD4CCallbacks::BLOCK_QUOTE(enter);
             break;
         case MD_BLOCK_UL:
-            MD4CCallbacks::BLOCK_UL(enter);
+            MD4CCallbacks::BLOCK_UL((MD_BLOCK_UL_DETAIL*) detail, enter);
+            break;
+        case MD_BLOCK_OL:
+            MD4CCallbacks::BLOCK_OL((MD_BLOCK_OL_DETAIL*) detail, enter);
             break;
         case MD_BLOCK_LI:
             MD4CCallbacks::BLOCK_LI((MD_BLOCK_LI_DETAIL*) detail, enter);
@@ -194,7 +197,7 @@ void renderText(const char* text, const std::size_t size)
     // Default case
     else
     {
-        MD4CCallbacks::s_SpanStack[MD4CCallbacks::s_SpanStack.size()-1].buffer += s;
+        MD4CCallbacks::s_SpanStack.back().buffer += s;
     }
 
 #ifdef DEBUG
@@ -208,7 +211,7 @@ void renderCode(const char* text, const std::size_t size)
     if (MD4CCallbacks::s_isInCodeBlock)
         MD4CCallbacks::s_codeTextBuffer += s;
     else
-        MD4CCallbacks::s_SpanStack[MD4CCallbacks::s_SpanStack.size()-1].buffer += s;
+        MD4CCallbacks::s_SpanStack.back().buffer += s;
 
 #ifdef DEBUG
     std::cout << s << '\n';
@@ -230,7 +233,7 @@ int ImGuiMarkdown::Text(MD_TEXTTYPE type, const MD_CHAR* text, MD_SIZE size, voi
             renderCode(text, size);
             break;
         case MD_TEXT_SOFTBR:
-            MD4CCallbacks::s_SpanStack[MD4CCallbacks::s_SpanStack.size()-1].buffer += " ";
+            MD4CCallbacks::s_SpanStack.back().buffer += " ";
             break;
         default:
             break;
