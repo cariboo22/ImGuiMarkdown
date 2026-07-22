@@ -14,7 +14,7 @@
 ImGuiMarkdown::ImGuiMarkdown()
 {
     m_Parser.abi_version = 0;
-    m_Parser.flags = MD_FLAG_TABLES | MD_FLAG_NOINDENTEDCODEBLOCKS;
+    m_Parser.flags = MD_FLAG_TABLES;
 
     m_Parser.enter_block = EnterBlock;
     m_Parser.leave_block = LeaveBlock;
@@ -234,6 +234,9 @@ int ImGuiMarkdown::Text(MD_TEXTTYPE type, const MD_CHAR* text, MD_SIZE size, voi
             break;
         case MD_TEXT_SOFTBR:
             MD4CCallbacks::s_SpanStack.back().buffer += " ";
+            break;
+        case MD_TEXT_BR:
+            MD4CCallbacks::s_SpanStack.back().buffer += "\n";
             break;
         default:
             break;

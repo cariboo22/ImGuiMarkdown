@@ -130,16 +130,23 @@ namespace MD4CCallbacks
 
             for (const auto& c : span.buffer)
             {
-                if (c == ' ')
+                switch (c)
                 {
-                    flushWord();
+                    case ' ':
+                        flushWord();
+                        addSpace();
+                        break;
 
-                    addSpace();
+                    case '\n':
+                        flushWord();
+                        x = startX;
+                        y += lineHeight;
+                        break;
 
-                    continue;
-                }
-
-                current += c;
+                    default:
+                        current += c;
+                        break;
+                }            
             }
 
             flushWord();

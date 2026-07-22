@@ -125,10 +125,11 @@ console.log(x);
 2. Two
 3. Three
 
-1. One
-    1. Nested
-    2. Nested
-2. Two
+
+1) One
+    1) Nested
+    2) Nested
+2) Two
 
 ---
 
