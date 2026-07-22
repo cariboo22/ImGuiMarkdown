@@ -30,12 +30,20 @@ namespace MD4CCallbacks
         char mark;
     };
 
+    struct Quote
+    {
+        ImVec2 startPos {};
+        unsigned int depth = 0;
+    };
+
     static TableState s_tableState {};
     static bool s_isInCodeBlock = false;
 
     static Counter s_counter {};
-    static int s_quoteDepth = 0;
     static std::string s_codeTextBuffer = "";
+
+    static unsigned int s_quoteDepth = 0;
+    static std::vector<Quote> s_quoteStack {};
 
     static int s_listDepth = 0;
     static std::vector<List> s_listStack {};
@@ -155,6 +163,32 @@ namespace MD4CCallbacks
         ImGui::Dummy(ImVec2(0.0f, y + maxHeight - startY));
     }
 
+    inline void DrawQuote(ImVec2 startPos, ImVec2 endPos)
+    {
+        // Draw small quote rect
+        ImVec4 rectColor = ImGui::GetStyle().Colors[ImGuiCol_ScrollbarGrab];
+        ImVec2 startRectPos = ImVec2(startPos.x - (ImGuiMarkdown::s_config.indentSize/2.0f - ImGuiMarkdown::s_config.quoteRectThickness/2.0f),
+                                     startPos.y - ImGui::GetStyle().ItemSpacing.y/2.0f);
+        ImVec2 endRectPos = ImVec2(endPos.x - (ImGuiMarkdown::s_config.indentSize/2.0f + ImGuiMarkdown::s_config.quoteRectThickness/2.0f),
+                                   endPos.y);
+
+        ImGui::GetWindowDrawList()->AddRectFilled(
+            startRectPos,
+            endRectPos,
+            ImGui::ColorConvertFloat4ToU32(rectColor)
+        );
+
+        // Background rect
+        // ImVec4 rectColorBG = ImGui::GetStyle().Colors[ImGuiCol_Separator];
+        // ImGui::GetWindowDrawList()->AddRectFilled(
+        //     startRectPos,
+        //     ImVec2(p.x + ImGui::GetContentRegionAvail().x,
+        //            // + static_cast<float>(MD4CCallbacks::s_quoteDepth-1) * ImGuiMarkdown::config.indentSize,
+        //            p.y + ImGui::GetTextLineHeight() + ImGui::GetStyle().ItemSpacing.y/2.0f),
+        //     ImGui::ColorConvertFloat4ToU32(rectColorBG)
+        // );
+    }
+
     /* === Block definitions === */
     
     inline void BLOCK_DEFAULT(bool enter)
@@ -177,9 +211,13 @@ namespace MD4CCallbacks
         {
             s_quoteDepth++;
             ImGui::Indent(ImGuiMarkdown::s_config.indentSize);
+            s_quoteStack.push_back({.startPos = ImGui::GetCursorScreenPos(), .depth = s_quoteDepth});
         }
         else
         {
+            DrawQuote(s_quoteStack.back().startPos, ImGui::GetCursorScreenPos());
+
+            s_quoteStack.pop_back();
             ImGui::Unindent(ImGuiMarkdown::s_config.indentSize);
             s_quoteDepth--;
         }

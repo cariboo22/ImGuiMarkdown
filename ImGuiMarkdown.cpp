@@ -153,41 +153,6 @@ void renderText(const char* text, const std::size_t size)
 {
     std::string s(text, size);
 
-    // Rendering quote rectangle and background
-    if (MD4CCallbacks::s_quoteDepth > 0)
-    {
-        ImVec2 p = ImGui::GetCursorScreenPos();
-
-        // Draw small quite rect
-        ImVec4 rectColor = ImGui::GetStyle().Colors[ImGuiCol_ScrollbarGrab];
-        ImVec2 startRectPos = ImVec2(p.x - (ImGuiMarkdown::s_config.indentSize/2.0f - ImGuiMarkdown::s_config.quoteRectThickness/2.0f),
-                                     p.y - ImGui::GetStyle().ItemSpacing.y/2.0f);
-        ImVec2 endRectPos = ImVec2(p.x - (ImGuiMarkdown::s_config.indentSize/2.0f + ImGuiMarkdown::s_config.quoteRectThickness/2.0f),
-                                   p.y + ImGui::GetTextLineHeight() + ImGui::GetStyle().ItemSpacing.y/2.0f);
-
-        for (int d = 0; d < MD4CCallbacks::s_quoteDepth; d++)
-        {
-            ImGui::GetWindowDrawList()->AddRectFilled(
-                startRectPos,
-                endRectPos,
-                ImGui::ColorConvertFloat4ToU32(rectColor)
-            );
-
-            startRectPos.x -= ImGuiMarkdown::s_config.indentSize;
-            endRectPos.x -= ImGuiMarkdown::s_config.indentSize;
-        }
-
-        // Background rect
-        // ImVec4 rectColorBG = ImGui::GetStyle().Colors[ImGuiCol_Separator];
-        // ImGui::GetWindowDrawList()->AddRectFilled(
-        //     startRectPos,
-        //     ImVec2(p.x + ImGui::GetContentRegionAvail().x,
-        //            // + static_cast<float>(MD4CCallbacks::s_quoteDepth-1) * ImGuiMarkdown::config.indentSize,
-        //            p.y + ImGui::GetTextLineHeight() + ImGui::GetStyle().ItemSpacing.y/2.0f),
-        //     ImGui::ColorConvertFloat4ToU32(rectColorBG)
-        // );
-    }
-
     // Handle table header text writing
     // ?? Does the table header should also be rich text ??
     if (MD4CCallbacks::s_tableState.header)
