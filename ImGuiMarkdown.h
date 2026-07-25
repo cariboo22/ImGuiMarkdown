@@ -5,6 +5,7 @@
 
 #include <cstddef>
 
+#include "Md4cCallbacks.h"
 
 // #define DEBUG
 
@@ -18,6 +19,7 @@ struct MarkdownConfig
     float indentSize = 20.0f;
     float quoteRectThickness = 4.0f;
     float codeBlockCornerRadius = 5.0f;
+    unsigned int parserFlags = MD_FLAG_TABLES;
 };
 
 
@@ -54,18 +56,45 @@ public:
     static inline MarkdownConfig s_config {};
 
 private:
+    void renderText(const char* text, const std::size_t size);
+    void renderCode(const char* text, const std::size_t size);
 
-    static int EnterBlock(MD_BLOCKTYPE type, void* d, void*) { return Block(type, d, true); }
-    static int LeaveBlock(MD_BLOCKTYPE type, void* d, void*) { return Block(type, d, false); }
-    static int Block(MD_BLOCKTYPE type, void* detail, bool enter);
+    static int EnterBlockCallback(MD_BLOCKTYPE type, void* d, void* userdata) 
+    {
+        auto* renderer = static_cast<ImGuiMarkdown*>(userdata);
+        return renderer->Block(type, d, true); 
+    }
+    static int LeaveBlockCallback(MD_BLOCKTYPE type, void* d, void* userdata) 
+    {
+        auto* renderer = static_cast<ImGuiMarkdown*>(userdata);
+        return renderer->Block(type, d, false); 
+    }
+    int Block(MD_BLOCKTYPE type, void* detail, bool enter);
 
-    static int EnterSpan(MD_SPANTYPE type, void* d, void*) { return Span(type, d, true); }
-    static int LeaveSpan(MD_SPANTYPE type, void* d, void*) { return Span(type, d, false); }
-    static int Span(MD_SPANTYPE type, void* detail, bool enter);
 
-    static int Text(MD_TEXTTYPE t, const MD_CHAR* text, MD_SIZE size, void* u);
+    static int EnterSpanCallback(MD_SPANTYPE type, void* d, void* userdata) 
+    {
+        auto* renderer = static_cast<ImGuiMarkdown*>(userdata);
+        return renderer->Span(type, d, true); 
+    }
+    static int LeaveSpanCallback(MD_SPANTYPE type, void* d, void* userdata) 
+    {
+        auto* renderer = static_cast<ImGuiMarkdown*>(userdata);
+        return renderer->Span(type, d, false); 
+    }
+    int Span(MD_SPANTYPE type, void* detail, bool enter);
+
+
+    static int TextCallback(MD_TEXTTYPE type, const MD_CHAR* text, MD_SIZE size, void* userdata) 
+    {
+        auto* renderer = static_cast<ImGuiMarkdown*>(userdata);
+        return renderer->Text(type, text, size); 
+    }
+    int Text(MD_TEXTTYPE t, const MD_CHAR* text, MD_SIZE size);
+
 
     MD_PARSER m_Parser {};
+    MD4CCallbacks m_md4cCallbacks {};
 
     static inline ImFont* s_Fonts[10];
 
