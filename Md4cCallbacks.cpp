@@ -112,7 +112,6 @@ void MD4CCallbacks::RenderRichText()
 void MD4CCallbacks::DrawQuote(ImVec2 startPos, ImVec2 endPos)
 {
     // Draw small quote rect
-    ImVec4 rectColor = ImGui::GetStyle().Colors[ImGuiCol_ScrollbarGrab];
     ImVec2 startRectPos = ImVec2(startPos.x - (ImGuiMarkdown::s_config.indentSize/2.0f - ImGuiMarkdown::s_config.quoteRectThickness/2.0f),
                                  startPos.y - ImGui::GetStyle().ItemSpacing.y/2.0f);
     ImVec2 endRectPos = ImVec2(endPos.x - (ImGuiMarkdown::s_config.indentSize/2.0f + ImGuiMarkdown::s_config.quoteRectThickness/2.0f),
@@ -121,7 +120,7 @@ void MD4CCallbacks::DrawQuote(ImVec2 startPos, ImVec2 endPos)
     ImGui::GetWindowDrawList()->AddRectFilled(
         startRectPos,
         endRectPos,
-        ImGui::ColorConvertFloat4ToU32(rectColor)
+        ImGuiMarkdown::s_config.quoteColor
     );
 
     // Background rect
@@ -155,9 +154,8 @@ void MD4CCallbacks::BLOCK_QUOTE(bool enter)
 {
     if (enter)
     {
-        m_quoteDepth++;
         ImGui::Indent(ImGuiMarkdown::s_config.indentSize);
-        m_quoteStack.push_back({.startPos = ImGui::GetCursorScreenPos(), .depth = m_quoteDepth});
+        m_quoteStack.push_back({.startPos = ImGui::GetCursorScreenPos(), .depth = m_quoteStack.size()+1});
     }
     else
     {
@@ -165,7 +163,6 @@ void MD4CCallbacks::BLOCK_QUOTE(bool enter)
 
         m_quoteStack.pop_back();
         ImGui::Unindent(ImGuiMarkdown::s_config.indentSize);
-        m_quoteDepth--;
     }
 }
 
@@ -178,18 +175,16 @@ void MD4CCallbacks::BLOCK_UL(MD_BLOCK_UL_DETAIL detail, bool enter)
         RenderRichText();
         m_spanStack.clear();
 
-        if (m_listDepth > 0)
+        if (m_listStack.size() > 0)
             ImGui::Indent(ImGuiMarkdown::s_config.indentSize);
 
-        m_listDepth++;
         m_listStack.push_back({.isUnordered = true, .mark = detail.mark});
     }
     else
     {
-        if (m_listDepth > 1)
+        if (m_listStack.size() > 1)
             ImGui::Unindent(ImGuiMarkdown::s_config.indentSize);
 
-        m_listDepth--;
         m_listStack.pop_back();
 
         m_spanStack.clear();
@@ -205,20 +200,18 @@ void MD4CCallbacks::BLOCK_OL(MD_BLOCK_OL_DETAIL detail, bool enter)
         RenderRichText();
         m_spanStack.clear();
 
-        if (m_listDepth > 0)
+        if (m_listStack.size() > 0)
             ImGui::Indent(ImGuiMarkdown::s_config.indentSize);
         
-        m_listDepth++;
         m_listStack.push_back({.isUnordered = false,
                                .start = detail.start,
                                .mark = detail.mark_delimiter});
     }
     else
     {
-        if (m_listDepth > 1)
+        if (m_listStack.size() > 1)
             ImGui::Unindent(ImGuiMarkdown::s_config.indentSize);
 
-        m_listDepth--;
         m_listStack.pop_back();
 
         m_spanStack.clear();
@@ -270,7 +263,7 @@ void MD4CCallbacks::BLOCK_H(MD_BLOCK_H_DETAIL detail, bool enter)
         ImGui::NewLine();
         m_spanStack.clear();
 
-        ImGui::PushFont(ImGuiMarkdown::GetFont(ImGuiMarkdown::FONT_H1 + detail.level-1));
+        ImGui::PushFont(ImGuiMarkdown::s_config.GetFont(MarkdownConfig::FONT_H1 + detail.level-1));
         m_spanStack.push_back({});
     }
     else
@@ -294,9 +287,8 @@ void MD4CCallbacks::BLOCK_CODE(const MD_BLOCK_CODE_DETAIL, bool enter)
     {
         m_isInCodeBlock = true;
 
-        ImVec4 bgColor = ImGui::GetStyle().Colors[ImGuiCol_TableHeaderBg];
         ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, ImGuiMarkdown::s_config.codeBlockCornerRadius);
-        ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::ColorConvertFloat4ToU32(bgColor));
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGuiMarkdown::s_config.codeBlockBGColor);
 
         ImGui::BeginChild(("##code_" + std::to_string(m_counter.code++)).c_str(), ImVec2(0.0f, 0.0f), 
             ImGuiChildFlags_Borders | 
@@ -401,9 +393,9 @@ void MD4CCallbacks::SPAN_EM(bool enter)
     {
         m_italic = true;
         if (m_italic && m_bold)
-            ImGui::PushFont(ImGuiMarkdown::GetFont(ImGuiMarkdown::FONT_BOLDITALIC));
+            ImGui::PushFont(ImGuiMarkdown::s_config.GetFont(MarkdownConfig::FONT_BOLDITALIC));
         else
-            ImGui::PushFont(ImGuiMarkdown::GetFont(ImGuiMarkdown::FONT_ITALIC));
+            ImGui::PushFont(ImGuiMarkdown::s_config.GetFont(MarkdownConfig::FONT_ITALIC));
     }
     else
     {
@@ -418,9 +410,9 @@ void MD4CCallbacks::SPAN_STRONG(bool enter)
     {
         m_bold = true;
         if (m_italic && m_bold)
-            ImGui::PushFont(ImGuiMarkdown::GetFont(ImGuiMarkdown::FONT_BOLDITALIC));
+            ImGui::PushFont(ImGuiMarkdown::s_config.GetFont(MarkdownConfig::FONT_BOLDITALIC));
         else
-            ImGui::PushFont(ImGuiMarkdown::GetFont(ImGuiMarkdown::FONT_BOLD));
+            ImGui::PushFont(ImGuiMarkdown::s_config.GetFont(MarkdownConfig::FONT_BOLD));
     }
     else
     {
@@ -433,7 +425,7 @@ void MD4CCallbacks::SPAN_CODE(bool enter)
 {
     if (enter)
     {
-        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 0, 0, 255));
+        ImGui::PushStyleColor(ImGuiCol_Text, ImGuiMarkdown::s_config.codeSpanTextColor);
     }
     else
     {

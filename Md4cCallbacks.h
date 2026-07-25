@@ -32,7 +32,7 @@ private:
     struct Quote
     {
         ImVec2 startPos {};
-        unsigned int depth = 0;
+        std::size_t depth = 0;
     };
 
     struct Span
@@ -54,16 +54,12 @@ public:
     Counter m_counter {};
     std::string m_codeTextBuffer = "";
 
-    unsigned int m_quoteDepth = 0;
     std::vector<Quote> m_quoteStack {};
-
-    int m_listDepth = 0;
     std::vector<List> m_listStack {};
+    std::vector<Span> m_spanStack {};
 
     bool m_italic = false;
     bool m_bold = false;
-
-    std::vector<Span> m_spanStack {};
 
     void RenderRichText();
     void DrawQuote(ImVec2 startPos, ImVec2 endPos);

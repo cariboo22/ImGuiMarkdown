@@ -59,19 +59,6 @@ void ImGuiMarkdown::Render()
     }
 }
 
-
-ImFont* ImGuiMarkdown::GetFont(unsigned int id)
-{
-    if (id < std::size(s_Fonts) && s_Fonts[id] != nullptr)
-    {
-        return s_Fonts[id];
-    }
-    else
-    {
-        return ImGui::GetFont();
-    }
-}
-
 int ImGuiMarkdown::BlockCallback(MD_BLOCKTYPE type, void* detail, void* userdata, bool enter) 
 {
     auto* renderer = static_cast<ImGuiMarkdown*>(userdata);

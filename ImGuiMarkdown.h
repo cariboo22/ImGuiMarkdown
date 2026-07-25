@@ -17,50 +17,6 @@
 
 struct MarkdownConfig
 {
-    float indentSize = 20.0f;
-    float quoteRectThickness = 4.0f;
-    float codeBlockCornerRadius = 5.0f;
-    unsigned int parserFlags = MD_FLAG_TABLES;
-};
-
-
-enum class EventType 
-{
-    Block,
-    Span,
-    Text
-};
-
-typedef std::variant<
-        MD_BLOCK_UL_DETAIL,
-        MD_BLOCK_OL_DETAIL,
-        MD_BLOCK_LI_DETAIL,
-        MD_BLOCK_H_DETAIL,
-        MD_BLOCK_CODE_DETAIL,
-        MD_BLOCK_TABLE_DETAIL,
-        MD_BLOCK_TD_DETAIL,
-        void*
-    > MD_DETAIL;
-
-struct Event 
-{
-    EventType type;
-    bool enter = false;
-
-    union {
-        MD_BLOCKTYPE blockType;
-        MD_SPANTYPE spanType;
-        MD_TEXTTYPE textType;
-    };
-
-    std::string text = "";   // only for text callbacks
-    MD_DETAIL detail = nullptr;
-};
-
-
-class ImGuiMarkdown
-{
-public:
     typedef enum Fonts 
     {
         FONT_REGULAR = 0,
@@ -75,20 +31,80 @@ public:
         FONT_H6
     } Fonts;
 
+    void SetFonts(ImFont* regular, ImFont* italic, ImFont* bold, ImFont* boldItalic, 
+                  ImFont* H1, ImFont* H2, ImFont* H3,
+                  ImFont* H4 = nullptr, ImFont* H5 = nullptr, ImFont* H6 = nullptr) 
+                  { fonts[FONT_REGULAR] = regular; fonts[FONT_ITALIC] = italic; 
+                    fonts[FONT_BOLD] = bold; fonts[FONT_BOLDITALIC] = boldItalic;
+                    fonts[FONT_H1] = H1; fonts[FONT_H2] = H2; fonts[FONT_H3]= H3; 
+                    fonts[FONT_H4] = H4; fonts[FONT_H5] = H5; fonts[FONT_H6]= H6; }
+    ImFont* GetFont(unsigned int id)
+    {
+        if (id < std::size(fonts) && fonts[id] != nullptr)
+        {
+            return fonts[id];
+        }
+        else
+        {
+            return ImGui::GetFont();
+        }
+    }
+
+    ImFont* fonts[10];
+
+    unsigned int parserFlags = MD_FLAG_TABLES;
+    float indentSize = 20.0f;
+
+    float quoteRectThickness = 4.0f;
+    ImU32 quoteColor = IM_COL32(79, 79, 79, 255);
+
+    float codeBlockCornerRadius = 5.0f;
+    ImU32 codeBlockBGColor = IM_COL32(49, 49, 51, 255);
+
+    ImU32 codeSpanTextColor = IM_COL32(255, 0, 0, 255);
+};
+
+typedef std::variant<
+        MD_BLOCK_UL_DETAIL,
+        MD_BLOCK_OL_DETAIL,
+        MD_BLOCK_LI_DETAIL,
+        MD_BLOCK_H_DETAIL,
+        MD_BLOCK_CODE_DETAIL,
+        MD_BLOCK_TABLE_DETAIL,
+        MD_BLOCK_TD_DETAIL,
+        void*
+    > MD_DETAIL;
+
+class ImGuiMarkdown
+{
+    enum class EventType 
+    {
+        Block,
+        Span,
+        Text
+    };
+
+    struct Event 
+    {
+        EventType type;
+        bool enter = false;
+
+        union 
+        {
+            MD_BLOCKTYPE blockType;
+            MD_SPANTYPE spanType;
+            MD_TEXTTYPE textType;
+        };
+
+        std::string text = "";
+        MD_DETAIL detail = nullptr;
+    };
+public:
     ImGuiMarkdown();
     ~ImGuiMarkdown() = default;
 
     void Parse(const char* text, const size_t size);
     void Render();
-    void SetFonts(ImFont* regular, ImFont* italic, ImFont* bold, ImFont* boldItalic, 
-                  ImFont* H1, ImFont* H2, ImFont* H3,
-                  ImFont* H4 = nullptr, ImFont* H5 = nullptr, ImFont* H6 = nullptr) 
-                  { s_Fonts[FONT_REGULAR] = regular; s_Fonts[FONT_ITALIC] = italic; 
-                    s_Fonts[FONT_BOLD] = bold; s_Fonts[FONT_BOLDITALIC] = boldItalic;
-                    s_Fonts[FONT_H1] = H1; s_Fonts[FONT_H2] = H2; s_Fonts[FONT_H3]= H3; 
-                    s_Fonts[FONT_H4] = H4; s_Fonts[FONT_H5] = H5; s_Fonts[FONT_H6]= H6; }
-
-    static ImFont* GetFont(unsigned header);
 
     static inline MarkdownConfig s_config {};
 
@@ -123,7 +139,6 @@ private:
     std::vector<Event> m_events {};
     MD4CCallbacks m_md4cCallbacks {};
 
-    static inline ImFont* s_Fonts[10];
 
 #ifdef DEBUG
     static inline std::vector<std::string> block_debug = {
