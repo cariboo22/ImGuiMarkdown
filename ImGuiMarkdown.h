@@ -4,6 +4,7 @@
 #include <imgui.h>
 
 #include <cstddef>
+#include <variant>
 
 #include "Md4cCallbacks.h"
 
@@ -23,10 +24,45 @@ struct MarkdownConfig
 };
 
 
+enum class EventType 
+{
+    Block,
+    Span,
+    Text
+};
+
+typedef std::variant<
+        MD_BLOCK_UL_DETAIL,
+        MD_BLOCK_OL_DETAIL,
+        MD_BLOCK_LI_DETAIL,
+        MD_BLOCK_H_DETAIL,
+        MD_BLOCK_CODE_DETAIL,
+        MD_BLOCK_TABLE_DETAIL,
+        MD_BLOCK_TD_DETAIL,
+        void*
+    > MD_DETAIL;
+
+struct Event 
+{
+    EventType type;
+    bool enter = false;
+
+    union {
+        MD_BLOCKTYPE blockType;
+        MD_SPANTYPE spanType;
+        MD_TEXTTYPE textType;
+    };
+
+    std::string text = "";   // only for text callbacks
+    MD_DETAIL detail = nullptr;
+};
+
+
 class ImGuiMarkdown
 {
 public:
-    typedef enum Fonts {
+    typedef enum Fonts 
+    {
         FONT_REGULAR = 0,
         FONT_ITALIC,
         FONT_BOLD,
@@ -43,6 +79,7 @@ public:
     ~ImGuiMarkdown() = default;
 
     void Parse(const char* text, const size_t size);
+    void Render();
     void SetFonts(ImFont* regular, ImFont* italic, ImFont* bold, ImFont* boldItalic, 
                   ImFont* H1, ImFont* H2, ImFont* H3,
                   ImFont* H4 = nullptr, ImFont* H5 = nullptr, ImFont* H6 = nullptr) 
@@ -56,44 +93,34 @@ public:
     static inline MarkdownConfig s_config {};
 
 private:
-    void renderText(const char* text, const std::size_t size);
-    void renderCode(const char* text, const std::size_t size);
+    void renderText(const std::string& text);
+    void renderCode(const std::string& text);
+
 
     static int EnterBlockCallback(MD_BLOCKTYPE type, void* d, void* userdata) 
-    {
-        auto* renderer = static_cast<ImGuiMarkdown*>(userdata);
-        return renderer->Block(type, d, true); 
-    }
+        { return BlockCallback(type, d, userdata, true); };
     static int LeaveBlockCallback(MD_BLOCKTYPE type, void* d, void* userdata) 
-    {
-        auto* renderer = static_cast<ImGuiMarkdown*>(userdata);
-        return renderer->Block(type, d, false); 
-    }
-    int Block(MD_BLOCKTYPE type, void* detail, bool enter);
+        { return BlockCallback(type, d, userdata, false); };
+    static int BlockCallback(MD_BLOCKTYPE type, void* detail, void* userdata, bool enter);
+
+    int Block(MD_BLOCKTYPE type, MD_DETAIL detail, bool enter);
 
 
     static int EnterSpanCallback(MD_SPANTYPE type, void* d, void* userdata) 
-    {
-        auto* renderer = static_cast<ImGuiMarkdown*>(userdata);
-        return renderer->Span(type, d, true); 
-    }
+        { return SpanCallback(type, d, userdata, true); };
     static int LeaveSpanCallback(MD_SPANTYPE type, void* d, void* userdata) 
-    {
-        auto* renderer = static_cast<ImGuiMarkdown*>(userdata);
-        return renderer->Span(type, d, false); 
-    }
-    int Span(MD_SPANTYPE type, void* detail, bool enter);
+        { return SpanCallback(type, d, userdata, false); };
+    static int SpanCallback(MD_SPANTYPE type, void* detail, void* userdata, bool enter);
+
+    int Span(MD_SPANTYPE type, MD_DETAIL detail, bool enter);
 
 
-    static int TextCallback(MD_TEXTTYPE type, const MD_CHAR* text, MD_SIZE size, void* userdata) 
-    {
-        auto* renderer = static_cast<ImGuiMarkdown*>(userdata);
-        return renderer->Text(type, text, size); 
-    }
-    int Text(MD_TEXTTYPE t, const MD_CHAR* text, MD_SIZE size);
+    static int TextCallback(MD_TEXTTYPE type, const MD_CHAR* text, MD_SIZE size, void* userdata);
+    int Text(MD_TEXTTYPE t, const std::string& text);
 
 
     MD_PARSER m_Parser {};
+    std::vector<Event> m_events {};
     MD4CCallbacks m_md4cCallbacks {};
 
     static inline ImFont* s_Fonts[10];

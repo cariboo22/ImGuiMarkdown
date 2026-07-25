@@ -77,17 +77,17 @@ public:
     /* === Block definitions === */
     void BLOCK_DEFAULT(bool enter);
     void BLOCK_QUOTE(bool enter);
-    void BLOCK_UL(MD_BLOCK_UL_DETAIL* detail, bool enter);
-    void BLOCK_OL(MD_BLOCK_OL_DETAIL* detail, bool enter);
-    void BLOCK_LI(MD_BLOCK_LI_DETAIL*, bool enter);
+    void BLOCK_UL(MD_BLOCK_UL_DETAIL detail, bool enter);
+    void BLOCK_OL(MD_BLOCK_OL_DETAIL detail, bool enter);
+    void BLOCK_LI(MD_BLOCK_LI_DETAIL, bool enter);
     void BLOCK_HR(bool enter);
-    void BLOCK_H(MD_BLOCK_H_DETAIL* detail, bool enter);
-    void BLOCK_CODE(const MD_BLOCK_CODE_DETAIL*, bool enter);
+    void BLOCK_H(MD_BLOCK_H_DETAIL detail, bool enter);
+    void BLOCK_CODE(const MD_BLOCK_CODE_DETAIL, bool enter);
     void BLOCK_P(bool enter);
-    void BLOCK_TABLE(const MD_BLOCK_TABLE_DETAIL* detail, bool enter);
+    void BLOCK_TABLE(const MD_BLOCK_TABLE_DETAIL detail, bool enter);
     void BLOCK_THEAD(bool enter);
     void BLOCK_TR(bool enter);
-    void BLOCK_TD(const MD_BLOCK_TD_DETAIL*, bool enter);
+    void BLOCK_TD(const MD_BLOCK_TD_DETAIL, bool enter);
 
     /* === Span definitions === */
 

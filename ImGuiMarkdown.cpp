@@ -28,8 +28,7 @@ ImGuiMarkdown::ImGuiMarkdown()
 
 void ImGuiMarkdown::Parse(const char* text, const size_t size)
 {
-    m_md4cCallbacks.Reset();
-
+    m_events.clear();
 #ifdef DEBUG
     std::cout << "================================================" << '\n';
     md_parse(text, static_cast<MD_SIZE>(size), &m_Parser, this);
@@ -37,6 +36,27 @@ void ImGuiMarkdown::Parse(const char* text, const size_t size)
 #else
     md_parse(text, static_cast<MD_SIZE>(size), &m_Parser, this);
 #endif
+}
+
+void ImGuiMarkdown::Render()
+{
+    m_md4cCallbacks.Reset();
+    
+    for (auto& e : m_events)
+    {
+        switch (e.type) 
+        {
+            case EventType::Block:
+                Block(e.blockType, e.detail, e.enter);
+                break;
+            case EventType::Span:
+                Span(e.spanType, e.detail, e.enter);
+                break;
+            case EventType::Text:
+                Text(e.textType, e.text);
+                break;
+        }
+    }
 }
 
 
@@ -52,7 +72,78 @@ ImFont* ImGuiMarkdown::GetFont(unsigned int id)
     }
 }
 
-int ImGuiMarkdown::Block(MD_BLOCKTYPE type, void* detail, bool enter)
+int ImGuiMarkdown::BlockCallback(MD_BLOCKTYPE type, void* detail, void* userdata, bool enter) 
+{
+    auto* renderer = static_cast<ImGuiMarkdown*>(userdata);
+    Event event {
+            .type = EventType::Block,
+            .enter = enter,
+            .blockType = type,
+    };
+
+    switch (type)
+    {
+        case MD_BLOCK_UL:
+            event.detail = *static_cast<MD_BLOCK_UL_DETAIL*>(detail);
+            break;
+        case MD_BLOCK_OL:
+            event.detail = *static_cast<MD_BLOCK_OL_DETAIL*>(detail);
+            break;
+        case MD_BLOCK_LI:
+            event.detail = *static_cast<MD_BLOCK_LI_DETAIL*>(detail);
+            break;
+        case MD_BLOCK_H:
+            event.detail = *static_cast<MD_BLOCK_H_DETAIL*>(detail);
+            break;
+        case MD_BLOCK_CODE:
+            event.detail = *static_cast<MD_BLOCK_CODE_DETAIL*>(detail);
+            break;
+        case MD_BLOCK_TABLE:
+            event.detail = *static_cast<MD_BLOCK_TABLE_DETAIL*>(detail);
+            break;
+        case MD_BLOCK_TD:
+            event.detail = *static_cast<MD_BLOCK_TD_DETAIL*>(detail);
+            break;
+        default:
+            break;
+    }
+
+    renderer->m_events.push_back(event);
+
+    return 0;
+}
+
+int ImGuiMarkdown::SpanCallback(MD_SPANTYPE type, void*, void* userdata, bool enter) 
+{
+    auto* renderer = static_cast<ImGuiMarkdown*>(userdata);
+    Event event {
+            .type = EventType::Span,
+            .enter = enter,
+            .spanType = type,
+    };
+
+    renderer->m_events.push_back(event);
+
+    return 0;
+}
+
+int ImGuiMarkdown::TextCallback(MD_TEXTTYPE type, const MD_CHAR* text, MD_SIZE size, void* userdata)
+{
+    auto* renderer = static_cast<ImGuiMarkdown*>(userdata);
+    std::string copy(text, size);
+
+    Event event {
+            .type = EventType::Text,
+            .textType = type,
+            .text = copy
+    };
+
+    renderer->m_events.push_back(event);
+
+    return 0;
+}
+
+int ImGuiMarkdown::Block(MD_BLOCKTYPE type, MD_DETAIL detail, bool enter)
 {
     switch (type)
     {
@@ -60,28 +151,28 @@ int ImGuiMarkdown::Block(MD_BLOCKTYPE type, void* detail, bool enter)
             m_md4cCallbacks.BLOCK_QUOTE(enter);
             break;
         case MD_BLOCK_UL:
-            m_md4cCallbacks.BLOCK_UL((MD_BLOCK_UL_DETAIL*) detail, enter);
+            m_md4cCallbacks.BLOCK_UL(std::get<MD_BLOCK_UL_DETAIL>(detail), enter);
             break;
         case MD_BLOCK_OL:
-            m_md4cCallbacks.BLOCK_OL((MD_BLOCK_OL_DETAIL*) detail, enter);
+            m_md4cCallbacks.BLOCK_OL(std::get<MD_BLOCK_OL_DETAIL>(detail), enter);
             break;
         case MD_BLOCK_LI:
-            m_md4cCallbacks.BLOCK_LI((MD_BLOCK_LI_DETAIL*) detail, enter);
+            m_md4cCallbacks.BLOCK_LI(std::get<MD_BLOCK_LI_DETAIL>(detail), enter);
             break;
         case MD_BLOCK_HR:
             m_md4cCallbacks.BLOCK_HR(enter);
             break;
         case MD_BLOCK_H:
-            m_md4cCallbacks.BLOCK_H((MD_BLOCK_H_DETAIL*) detail, enter);
+            m_md4cCallbacks.BLOCK_H(std::get<MD_BLOCK_H_DETAIL>(detail), enter);
             break;
         case MD_BLOCK_CODE:
-            m_md4cCallbacks.BLOCK_CODE((MD_BLOCK_CODE_DETAIL*) detail, enter);
+            m_md4cCallbacks.BLOCK_CODE(std::get<MD_BLOCK_CODE_DETAIL>(detail), enter);
             break;
         case MD_BLOCK_P:
             m_md4cCallbacks.BLOCK_P(enter);
             break;
         case MD_BLOCK_TABLE:
-            m_md4cCallbacks.BLOCK_TABLE((MD_BLOCK_TABLE_DETAIL*) detail, enter);
+            m_md4cCallbacks.BLOCK_TABLE(std::get<MD_BLOCK_TABLE_DETAIL>(detail), enter);
             break;
         case MD_BLOCK_THEAD:
             m_md4cCallbacks.BLOCK_THEAD(enter);
@@ -94,7 +185,7 @@ int ImGuiMarkdown::Block(MD_BLOCKTYPE type, void* detail, bool enter)
         case MD_BLOCK_TH:
             break;
         case MD_BLOCK_TD:
-            m_md4cCallbacks.BLOCK_TD((MD_BLOCK_TD_DETAIL*) detail, enter);
+            m_md4cCallbacks.BLOCK_TD(std::get<MD_BLOCK_TD_DETAIL>(detail), enter);
             break;
         default:
             m_md4cCallbacks.BLOCK_DEFAULT(enter);
@@ -114,7 +205,7 @@ int ImGuiMarkdown::Block(MD_BLOCKTYPE type, void* detail, bool enter)
     return 0;
 }
 
-int ImGuiMarkdown::Span(MD_SPANTYPE type, void*, bool enter)
+int ImGuiMarkdown::Span(MD_SPANTYPE type, MD_DETAIL, bool enter)
 {
     switch (type)
     {
@@ -146,20 +237,18 @@ int ImGuiMarkdown::Span(MD_SPANTYPE type, void*, bool enter)
     return 0;
 }
 
-void ImGuiMarkdown::renderText(const char* text, const std::size_t size)
+void ImGuiMarkdown::renderText(const std::string& text)
 {
-    std::string s(text, size);
-
     // Handle table header text writing
     // ?? Does the table header should also be rich text ??
     if (m_md4cCallbacks.m_tableState.header)
     {
-        ImGui::TableSetupColumn(s.c_str());
+        ImGui::TableSetupColumn(text.c_str());
     }
     // Default case
     else
     {
-        m_md4cCallbacks.m_spanStack.back().buffer += s;
+        m_md4cCallbacks.m_spanStack.back().buffer += text;
     }
 
 #ifdef DEBUG
@@ -167,20 +256,19 @@ void ImGuiMarkdown::renderText(const char* text, const std::size_t size)
 #endif
 }
 
-void ImGuiMarkdown::renderCode(const char* text, const std::size_t size)
+void ImGuiMarkdown::renderCode(const std::string& text)
 {
-    std::string s(text, size);
     if (m_md4cCallbacks.m_isInCodeBlock)
-        m_md4cCallbacks.m_codeTextBuffer += s;
+        m_md4cCallbacks.m_codeTextBuffer += text;
     else
-        m_md4cCallbacks.m_spanStack.back().buffer += s;
+        m_md4cCallbacks.m_spanStack.back().buffer += text;
 
 #ifdef DEBUG
     std::cout << s << '\n';
 #endif
 }
 
-int ImGuiMarkdown::Text(MD_TEXTTYPE type, const MD_CHAR* text, MD_SIZE size)
+int ImGuiMarkdown::Text(MD_TEXTTYPE type, const std::string& text)
 {
 #ifdef DEBUG
     std::cout << "type " << text_debug[type] << '\n';
@@ -189,10 +277,10 @@ int ImGuiMarkdown::Text(MD_TEXTTYPE type, const MD_CHAR* text, MD_SIZE size)
     switch (type)
     {
         case MD_TEXT_NORMAL:
-            renderText(text, size);
+            renderText(text);
             break;
         case MD_TEXT_CODE:
-            renderCode(text, size);
+            renderCode(text);
             break;
         case MD_TEXT_SOFTBR:
             m_md4cCallbacks.m_spanStack.back().buffer += " ";

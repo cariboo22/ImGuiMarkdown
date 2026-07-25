@@ -169,7 +169,7 @@ void MD4CCallbacks::BLOCK_QUOTE(bool enter)
     }
 }
 
-void MD4CCallbacks::BLOCK_UL(MD_BLOCK_UL_DETAIL* detail, bool enter)
+void MD4CCallbacks::BLOCK_UL(MD_BLOCK_UL_DETAIL detail, bool enter)
 {
     if (enter)
     {
@@ -182,7 +182,7 @@ void MD4CCallbacks::BLOCK_UL(MD_BLOCK_UL_DETAIL* detail, bool enter)
             ImGui::Indent(ImGuiMarkdown::s_config.indentSize);
 
         m_listDepth++;
-        m_listStack.push_back({.isUnordered = true, .mark = detail->mark});
+        m_listStack.push_back({.isUnordered = true, .mark = detail.mark});
     }
     else
     {
@@ -196,7 +196,7 @@ void MD4CCallbacks::BLOCK_UL(MD_BLOCK_UL_DETAIL* detail, bool enter)
     }
 }
 
-void MD4CCallbacks::BLOCK_OL(MD_BLOCK_OL_DETAIL* detail, bool enter)
+void MD4CCallbacks::BLOCK_OL(MD_BLOCK_OL_DETAIL detail, bool enter)
 {
     if (enter)
     {
@@ -210,8 +210,8 @@ void MD4CCallbacks::BLOCK_OL(MD_BLOCK_OL_DETAIL* detail, bool enter)
         
         m_listDepth++;
         m_listStack.push_back({.isUnordered = false,
-                               .start = detail->start,
-                               .mark = detail->mark_delimiter});
+                               .start = detail.start,
+                               .mark = detail.mark_delimiter});
     }
     else
     {
@@ -225,7 +225,7 @@ void MD4CCallbacks::BLOCK_OL(MD_BLOCK_OL_DETAIL* detail, bool enter)
     }
 }
 
-void MD4CCallbacks::BLOCK_LI(MD_BLOCK_LI_DETAIL*, bool enter)
+void MD4CCallbacks::BLOCK_LI(MD_BLOCK_LI_DETAIL, bool enter)
 {
     if (enter)
     {
@@ -263,14 +263,14 @@ void MD4CCallbacks::BLOCK_HR(bool enter)
     }
 }
 
-void MD4CCallbacks::BLOCK_H(MD_BLOCK_H_DETAIL* detail, bool enter)
+void MD4CCallbacks::BLOCK_H(MD_BLOCK_H_DETAIL detail, bool enter)
 {
     if (enter)
     {
         ImGui::NewLine();
         m_spanStack.clear();
 
-        ImGui::PushFont(ImGuiMarkdown::GetFont(ImGuiMarkdown::FONT_H1 + detail->level-1));
+        ImGui::PushFont(ImGuiMarkdown::GetFont(ImGuiMarkdown::FONT_H1 + detail.level-1));
         m_spanStack.push_back({});
     }
     else
@@ -280,7 +280,7 @@ void MD4CCallbacks::BLOCK_H(MD_BLOCK_H_DETAIL* detail, bool enter)
 
         ImGui::PopFont();
         
-        if (detail->level <= 2)
+        if (detail.level <= 2)
         {
             ImGui::Separator();
             ImGui::NewLine();
@@ -288,7 +288,7 @@ void MD4CCallbacks::BLOCK_H(MD_BLOCK_H_DETAIL* detail, bool enter)
     }
 }
 
-void MD4CCallbacks::BLOCK_CODE(const MD_BLOCK_CODE_DETAIL*, bool enter)
+void MD4CCallbacks::BLOCK_CODE(const MD_BLOCK_CODE_DETAIL, bool enter)
 {
     if (enter)
     {
@@ -332,7 +332,7 @@ void MD4CCallbacks::BLOCK_P(bool enter)
     }
 }
 
-void MD4CCallbacks::BLOCK_TABLE(const MD_BLOCK_TABLE_DETAIL* detail, bool enter)
+void MD4CCallbacks::BLOCK_TABLE(const MD_BLOCK_TABLE_DETAIL detail, bool enter)
 {
     if (enter)
     {
@@ -340,7 +340,7 @@ void MD4CCallbacks::BLOCK_TABLE(const MD_BLOCK_TABLE_DETAIL* detail, bool enter)
 
         ImGui::BeginTable(
             m_tableState.tableName.c_str(),
-            static_cast<int>(detail->col_count),
+            static_cast<int>(detail.col_count),
             ImGuiTableFlags_Borders |
             ImGuiTableFlags_RowBg |
             ImGuiTableFlags_Resizable |
@@ -378,7 +378,7 @@ void MD4CCallbacks::BLOCK_TR(bool enter)
     }
 }
 
-void MD4CCallbacks::BLOCK_TD(const MD_BLOCK_TD_DETAIL*, bool enter)
+void MD4CCallbacks::BLOCK_TD(const MD_BLOCK_TD_DETAIL, bool enter)
 {
     if (enter)
     {
