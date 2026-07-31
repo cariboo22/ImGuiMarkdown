@@ -5,7 +5,7 @@
 
 #include <string>
 
-#include "ImGuiMarkdown.h"
+#include "MarkdownRenderer.h"
 
 void MD4CCallbacks::RenderRichText()
 {
@@ -112,15 +112,15 @@ void MD4CCallbacks::RenderRichText()
 void MD4CCallbacks::DrawQuote(ImVec2 startPos, ImVec2 endPos)
 {
     // Draw small quote rect
-    ImVec2 startRectPos = ImVec2(startPos.x - (ImGuiMarkdown::s_config.indentSize/2.0f - ImGuiMarkdown::s_config.quoteRectThickness/2.0f),
+    ImVec2 startRectPos = ImVec2(startPos.x - (MarkdownRenderer::s_config.indentSize/2.0f - MarkdownRenderer::s_config.quoteRectThickness/2.0f),
                                  startPos.y - ImGui::GetStyle().ItemSpacing.y/2.0f);
-    ImVec2 endRectPos = ImVec2(endPos.x - (ImGuiMarkdown::s_config.indentSize/2.0f + ImGuiMarkdown::s_config.quoteRectThickness/2.0f),
+    ImVec2 endRectPos = ImVec2(endPos.x - (MarkdownRenderer::s_config.indentSize/2.0f + MarkdownRenderer::s_config.quoteRectThickness/2.0f),
                                endPos.y);
 
     ImGui::GetWindowDrawList()->AddRectFilled(
         startRectPos,
         endRectPos,
-        ImGuiMarkdown::s_config.quoteColor
+        MarkdownRenderer::s_config.quoteColor
     );
 
     // Background rect
@@ -154,7 +154,7 @@ void MD4CCallbacks::BLOCK_QUOTE(bool enter)
 {
     if (enter)
     {
-        ImGui::Indent(ImGuiMarkdown::s_config.indentSize);
+        ImGui::Indent(MarkdownRenderer::s_config.indentSize);
         m_quoteStack.push_back({.startPos = ImGui::GetCursorScreenPos(), .depth = m_quoteStack.size()+1});
     }
     else
@@ -162,7 +162,7 @@ void MD4CCallbacks::BLOCK_QUOTE(bool enter)
         DrawQuote(m_quoteStack.back().startPos, ImGui::GetCursorScreenPos());
 
         m_quoteStack.pop_back();
-        ImGui::Unindent(ImGuiMarkdown::s_config.indentSize);
+        ImGui::Unindent(MarkdownRenderer::s_config.indentSize);
     }
 }
 
@@ -176,14 +176,14 @@ void MD4CCallbacks::BLOCK_UL(MD_BLOCK_UL_DETAIL detail, bool enter)
         m_spanStack.clear();
 
         if (m_listStack.size() > 0)
-            ImGui::Indent(ImGuiMarkdown::s_config.indentSize);
+            ImGui::Indent(MarkdownRenderer::s_config.indentSize);
 
         m_listStack.push_back({.isUnordered = true, .mark = detail.mark});
     }
     else
     {
         if (m_listStack.size() > 1)
-            ImGui::Unindent(ImGuiMarkdown::s_config.indentSize);
+            ImGui::Unindent(MarkdownRenderer::s_config.indentSize);
 
         m_listStack.pop_back();
 
@@ -201,7 +201,7 @@ void MD4CCallbacks::BLOCK_OL(MD_BLOCK_OL_DETAIL detail, bool enter)
         m_spanStack.clear();
 
         if (m_listStack.size() > 0)
-            ImGui::Indent(ImGuiMarkdown::s_config.indentSize);
+            ImGui::Indent(MarkdownRenderer::s_config.indentSize);
         
         m_listStack.push_back({.isUnordered = false,
                                .start = detail.start,
@@ -210,7 +210,7 @@ void MD4CCallbacks::BLOCK_OL(MD_BLOCK_OL_DETAIL detail, bool enter)
     else
     {
         if (m_listStack.size() > 1)
-            ImGui::Unindent(ImGuiMarkdown::s_config.indentSize);
+            ImGui::Unindent(MarkdownRenderer::s_config.indentSize);
 
         m_listStack.pop_back();
 
@@ -263,7 +263,7 @@ void MD4CCallbacks::BLOCK_H(MD_BLOCK_H_DETAIL detail, bool enter)
         ImGui::NewLine();
         m_spanStack.clear();
 
-        ImGui::PushFont(ImGuiMarkdown::s_config.GetFont(MarkdownConfig::FONT_H1 + detail.level-1));
+        ImGui::PushFont(MarkdownRenderer::s_config.GetFont(MarkdownConfig::FONT_H1 + detail.level-1));
         m_spanStack.push_back({});
     }
     else
@@ -287,8 +287,8 @@ void MD4CCallbacks::BLOCK_CODE(const MD_BLOCK_CODE_DETAIL, bool enter)
     {
         m_isInCodeBlock = true;
 
-        ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, ImGuiMarkdown::s_config.codeBlockCornerRadius);
-        ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGuiMarkdown::s_config.codeBlockBGColor);
+        ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, MarkdownRenderer::s_config.codeBlockCornerRadius);
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, MarkdownRenderer::s_config.codeBlockBGColor);
 
         ImGui::BeginChild(("##code_" + std::to_string(m_counter.code++)).c_str(), ImVec2(0.0f, 0.0f), 
             ImGuiChildFlags_Borders | 
@@ -393,9 +393,9 @@ void MD4CCallbacks::SPAN_EM(bool enter)
     {
         m_italic = true;
         if (m_italic && m_bold)
-            ImGui::PushFont(ImGuiMarkdown::s_config.GetFont(MarkdownConfig::FONT_BOLDITALIC));
+            ImGui::PushFont(MarkdownRenderer::s_config.GetFont(MarkdownConfig::FONT_BOLDITALIC));
         else
-            ImGui::PushFont(ImGuiMarkdown::s_config.GetFont(MarkdownConfig::FONT_ITALIC));
+            ImGui::PushFont(MarkdownRenderer::s_config.GetFont(MarkdownConfig::FONT_ITALIC));
     }
     else
     {
@@ -410,9 +410,9 @@ void MD4CCallbacks::SPAN_STRONG(bool enter)
     {
         m_bold = true;
         if (m_italic && m_bold)
-            ImGui::PushFont(ImGuiMarkdown::s_config.GetFont(MarkdownConfig::FONT_BOLDITALIC));
+            ImGui::PushFont(MarkdownRenderer::s_config.GetFont(MarkdownConfig::FONT_BOLDITALIC));
         else
-            ImGui::PushFont(ImGuiMarkdown::s_config.GetFont(MarkdownConfig::FONT_BOLD));
+            ImGui::PushFont(MarkdownRenderer::s_config.GetFont(MarkdownConfig::FONT_BOLD));
     }
     else
     {
@@ -425,7 +425,7 @@ void MD4CCallbacks::SPAN_CODE(bool enter)
 {
     if (enter)
     {
-        ImGui::PushStyleColor(ImGuiCol_Text, ImGuiMarkdown::s_config.codeSpanTextColor);
+        ImGui::PushStyleColor(ImGuiCol_Text, MarkdownRenderer::s_config.codeSpanTextColor);
     }
     else
     {

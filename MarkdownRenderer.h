@@ -3,7 +3,6 @@
 #include <md4c.h>
 #include <imgui.h>
 
-#include <cstddef>
 #include <variant>
 
 #include "Md4cCallbacks.h"
@@ -75,7 +74,7 @@ typedef std::variant<
         void*
     > MD_DETAIL;
 
-class ImGuiMarkdown
+class MarkdownRenderer
 {
     enum class EventType 
     {
@@ -100,8 +99,8 @@ class ImGuiMarkdown
         MD_DETAIL detail = nullptr;
     };
 public:
-    ImGuiMarkdown();
-    ~ImGuiMarkdown() = default;
+    MarkdownRenderer();
+    ~MarkdownRenderer() = default;
 
     void Parse(const char* text, const size_t size);
     void Render();

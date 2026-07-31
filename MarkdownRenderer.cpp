@@ -1,15 +1,15 @@
-#include "ImGuiMarkdown.h"
+#include "MarkdownRenderer.h"
 
-#include <cstddef>
 #include <imgui.h>
 #include <md4c.h>
+
 #include <string>
 
 #ifdef DEBUG
 #include <iostream>
 #endif
 
-ImGuiMarkdown::ImGuiMarkdown()
+MarkdownRenderer::MarkdownRenderer()
 {
     m_Parser.abi_version = 0;
     m_Parser.flags = s_config.parserFlags;
@@ -26,7 +26,7 @@ ImGuiMarkdown::ImGuiMarkdown()
     m_Parser.syntax = nullptr;
 }
 
-void ImGuiMarkdown::Parse(const char* text, const size_t size)
+void MarkdownRenderer::Parse(const char* text, const size_t size)
 {
     m_events.clear();
 #ifdef DEBUG
@@ -38,7 +38,7 @@ void ImGuiMarkdown::Parse(const char* text, const size_t size)
 #endif
 }
 
-void ImGuiMarkdown::Render()
+void MarkdownRenderer::Render()
 {
     m_md4cCallbacks.Reset();
     
@@ -59,9 +59,9 @@ void ImGuiMarkdown::Render()
     }
 }
 
-int ImGuiMarkdown::BlockCallback(MD_BLOCKTYPE type, void* detail, void* userdata, bool enter) 
+int MarkdownRenderer::BlockCallback(MD_BLOCKTYPE type, void* detail, void* userdata, bool enter) 
 {
-    auto* renderer = static_cast<ImGuiMarkdown*>(userdata);
+    auto* renderer = static_cast<MarkdownRenderer*>(userdata);
     Event event {
             .type = EventType::Block,
             .enter = enter,
@@ -88,6 +88,9 @@ int ImGuiMarkdown::BlockCallback(MD_BLOCKTYPE type, void* detail, void* userdata
         case MD_BLOCK_TABLE:
             event.detail = *static_cast<MD_BLOCK_TABLE_DETAIL*>(detail);
             break;
+        case MD_BLOCK_TH:
+            event.detail = *static_cast<MD_BLOCK_TD_DETAIL*>(detail);
+            break;
         case MD_BLOCK_TD:
             event.detail = *static_cast<MD_BLOCK_TD_DETAIL*>(detail);
             break;
@@ -100,9 +103,9 @@ int ImGuiMarkdown::BlockCallback(MD_BLOCKTYPE type, void* detail, void* userdata
     return 0;
 }
 
-int ImGuiMarkdown::SpanCallback(MD_SPANTYPE type, void*, void* userdata, bool enter) 
+int MarkdownRenderer::SpanCallback(MD_SPANTYPE type, void*, void* userdata, bool enter) 
 {
-    auto* renderer = static_cast<ImGuiMarkdown*>(userdata);
+    auto* renderer = static_cast<MarkdownRenderer*>(userdata);
     Event event {
             .type = EventType::Span,
             .enter = enter,
@@ -114,9 +117,9 @@ int ImGuiMarkdown::SpanCallback(MD_SPANTYPE type, void*, void* userdata, bool en
     return 0;
 }
 
-int ImGuiMarkdown::TextCallback(MD_TEXTTYPE type, const MD_CHAR* text, MD_SIZE size, void* userdata)
+int MarkdownRenderer::TextCallback(MD_TEXTTYPE type, const MD_CHAR* text, MD_SIZE size, void* userdata)
 {
-    auto* renderer = static_cast<ImGuiMarkdown*>(userdata);
+    auto* renderer = static_cast<MarkdownRenderer*>(userdata);
     std::string copy(text, size);
 
     Event event {
@@ -130,7 +133,7 @@ int ImGuiMarkdown::TextCallback(MD_TEXTTYPE type, const MD_CHAR* text, MD_SIZE s
     return 0;
 }
 
-int ImGuiMarkdown::Block(MD_BLOCKTYPE type, MD_DETAIL detail, bool enter)
+int MarkdownRenderer::Block(MD_BLOCKTYPE type, MD_DETAIL detail, bool enter)
 {
     switch (type)
     {
@@ -192,7 +195,7 @@ int ImGuiMarkdown::Block(MD_BLOCKTYPE type, MD_DETAIL detail, bool enter)
     return 0;
 }
 
-int ImGuiMarkdown::Span(MD_SPANTYPE type, MD_DETAIL, bool enter)
+int MarkdownRenderer::Span(MD_SPANTYPE type, MD_DETAIL, bool enter)
 {
     switch (type)
     {
@@ -224,7 +227,7 @@ int ImGuiMarkdown::Span(MD_SPANTYPE type, MD_DETAIL, bool enter)
     return 0;
 }
 
-void ImGuiMarkdown::renderText(const std::string& text)
+void MarkdownRenderer::renderText(const std::string& text)
 {
     // Handle table header text writing
     // ?? Does the table header should also be rich text ??
@@ -243,7 +246,7 @@ void ImGuiMarkdown::renderText(const std::string& text)
 #endif
 }
 
-void ImGuiMarkdown::renderCode(const std::string& text)
+void MarkdownRenderer::renderCode(const std::string& text)
 {
     if (m_md4cCallbacks.m_isInCodeBlock)
         m_md4cCallbacks.m_codeTextBuffer += text;
@@ -255,7 +258,7 @@ void ImGuiMarkdown::renderCode(const std::string& text)
 #endif
 }
 
-int ImGuiMarkdown::Text(MD_TEXTTYPE type, const std::string& text)
+int MarkdownRenderer::Text(MD_TEXTTYPE type, const std::string& text)
 {
 #ifdef DEBUG
     std::cout << "type " << text_debug[type] << '\n';
